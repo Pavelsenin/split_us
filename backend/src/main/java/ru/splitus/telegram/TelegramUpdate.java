@@ -4,6 +4,7 @@ public class TelegramUpdate {
 
     private Long updateId;
     private TelegramMessage message;
+    private TelegramMessage editedMessage;
 
     public Long getUpdateId() {
         return updateId;
@@ -20,5 +21,12 @@ public class TelegramUpdate {
     public void setMessage(TelegramMessage message) {
         this.message = message;
     }
-}
 
+    public TelegramMessage getEditedMessage() {
+        return editedMessage;
+    }
+
+    public void setEditedMessage(TelegramMessage editedMessage) {
+        this.editedMessage = editedMessage;
+    }
+}
