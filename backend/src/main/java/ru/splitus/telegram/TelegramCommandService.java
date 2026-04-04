@@ -61,7 +61,10 @@ public class TelegramCommandService {
             if ("add_expense".equals(command.name)) {
                 return handleAddExpense(update, command.arguments);
             }
-            return reply(chatId, "Команда не поддерживается. Сейчас доступны /new_check, /start join_<token>, /add_guest и /add_expense.");
+            if ("delete_expense".equals(command.name)) {
+                return handleDeleteExpense(update, command.arguments);
+            }
+            return reply(chatId, "Команда не поддерживается. Сейчас доступны /new_check, /start join_<token>, /add_guest, /add_expense и /delete_expense.");
         } catch (ApiException exception) {
             return reply(chatId, exception.getMessage());
         }
@@ -138,8 +141,23 @@ public class TelegramCommandService {
         );
         return reply(
                 message.getChat().getId(),
-                "Расход " + details.getExpense().getAmountMinor() + " RUB добавлен. Делим на: " + joinParticipantNames(splitParticipants) + "."
+                "Расход " + details.getExpense().getAmountMinor() + " RUB добавлен. ID: " + details.getExpense().getId()
+                        + ". Делим на: " + joinParticipantNames(splitParticipants) + "."
         );
+    }
+
+    private TelegramWebhookResult handleDeleteExpense(TelegramUpdate update, String arguments) {
+        TelegramMessage message = update.getMessage();
+        TelegramUser from = requiredUser(message);
+        UUID expenseId = parseExpenseId(arguments);
+        ExpenseDetails expenseDetails = expenseCommandService.getExpense(expenseId);
+        Participant actorParticipant = checkCommandService.requireRegisteredParticipant(
+                expenseDetails.getExpense().getCheckId(),
+                from.getId().longValue(),
+                from.getUsername()
+        );
+        expenseCommandService.deleteExpense(expenseId, actorParticipant.getId());
+        return reply(message.getChat().getId(), "Расход " + expenseId + " удален.");
     }
 
     private AddExpenseArguments parseAddExpenseArguments(String arguments) {
@@ -172,6 +190,18 @@ public class TelegramCommandService {
             return amountMinor;
         } catch (NumberFormatException exception) {
             throw new ApiException(ApiErrorCode.EXPENSE_AMOUNT_INVALID, HttpStatus.BAD_REQUEST, "Сумма расхода должна быть положительным числом в minor units");
+        }
+    }
+
+    private UUID parseExpenseId(String value) {
+        String normalized = value == null ? "" : value.trim();
+        if (normalized.isEmpty()) {
+            throw new ApiException(ApiErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST, "Используйте /delete_expense <expense_id>.");
+        }
+        try {
+            return UUID.fromString(normalized);
+        } catch (IllegalArgumentException exception) {
+            throw new ApiException(ApiErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST, "expense_id должен быть UUID.");
         }
     }
 
