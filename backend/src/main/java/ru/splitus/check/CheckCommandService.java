@@ -130,10 +130,25 @@ public class CheckCommandService {
 
     @Transactional
     public Participant joinCheckByInviteToken(String inviteToken, long telegramUserId, String telegramUsername) {
-        String normalizedInviteToken = requireNonBlank(inviteToken, "Invite token is required");
-        CheckBook checkBook = checkBookRepository.findByInviteToken(normalizedInviteToken)
-                .orElseThrow(() -> new ApiException(ApiErrorCode.CHECK_NOT_FOUND, HttpStatus.NOT_FOUND, "Check not found"));
+        CheckBook checkBook = loadCheckByInviteToken(inviteToken);
         return addRegisteredParticipant(checkBook.getId(), telegramUserId, telegramUsername);
+    }
+
+    @Transactional
+    public Participant addGuestParticipantByInviteToken(
+            String inviteToken,
+            long actorTelegramUserId,
+            String actorTelegramUsername,
+            String guestDisplayName) {
+        CheckBook checkBook = loadCheckByInviteToken(inviteToken);
+        AppUser actor = upsertUser(actorTelegramUserId, normalizeTelegramUsername(actorTelegramUsername));
+        participantRepository.findActiveRegisteredParticipant(checkBook.getId(), actor.getId())
+                .orElseThrow(() -> new ApiException(
+                        ApiErrorCode.PARTICIPANT_DOES_NOT_BELONG_TO_CHECK,
+                        HttpStatus.FORBIDDEN,
+                        "Добавлять гостей может только зарегистрированный участник этого чека"
+                ));
+        return addGuestParticipant(checkBook.getId(), guestDisplayName);
     }
 
     @Transactional
@@ -200,6 +215,12 @@ public class CheckCommandService {
     private CheckBook loadCheck(UUID checkId) {
         return checkBookRepository.findById(checkId)
                 .orElseThrow(() -> new ApiException(ApiErrorCode.CHECK_NOT_FOUND, HttpStatus.NOT_FOUND, "Чек не найден"));
+    }
+
+    private CheckBook loadCheckByInviteToken(String inviteToken) {
+        String normalizedInviteToken = requireNonBlank(inviteToken, "Invite token is required");
+        return checkBookRepository.findByInviteToken(normalizedInviteToken)
+                .orElseThrow(() -> new ApiException(ApiErrorCode.CHECK_NOT_FOUND, HttpStatus.NOT_FOUND, "Check not found"));
     }
 
     private Map<UUID, Participant> participantMap(UUID checkId) {
