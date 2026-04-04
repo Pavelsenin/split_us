@@ -141,8 +141,8 @@ public class CheckCommandService {
     }
 
     @Transactional
-    public Participant requireRegisteredParticipantByInviteToken(String inviteToken, long telegramUserId, String telegramUsername) {
-        CheckBook checkBook = loadCheckByInviteToken(inviteToken);
+    public Participant requireRegisteredParticipant(UUID checkId, long telegramUserId, String telegramUsername) {
+        CheckBook checkBook = loadCheck(checkId);
         AppUser actor = upsertUser(telegramUserId, normalizeTelegramUsername(telegramUsername));
         return participantRepository.findActiveRegisteredParticipant(checkBook.getId(), actor.getId())
                 .orElseThrow(() -> new ApiException(
@@ -150,6 +150,12 @@ public class CheckCommandService {
                         HttpStatus.FORBIDDEN,
                         "Пользователь еще не присоединился к этому чеку"
                 ));
+    }
+
+    @Transactional
+    public Participant requireRegisteredParticipantByInviteToken(String inviteToken, long telegramUserId, String telegramUsername) {
+        CheckBook checkBook = loadCheckByInviteToken(inviteToken);
+        return requireRegisteredParticipant(checkBook.getId(), telegramUserId, telegramUsername);
     }
 
     @Transactional
