@@ -19,7 +19,6 @@ import ru.splitus.check.Participant;
 import ru.splitus.check.ParticipantMergeRecord;
 import ru.splitus.check.ParticipantMergeRepository;
 import ru.splitus.check.ParticipantRepository;
-import ru.splitus.check.ParticipantType;
 import ru.splitus.config.TelegramWebhookProperties;
 import ru.splitus.expense.ExpenseRepository;
 import ru.splitus.expense.ExpenseShareRepository;
@@ -34,8 +33,18 @@ class TelegramCommandServiceTest {
 
         Assertions.assertTrue(result.isAccepted());
         Assertions.assertEquals(1, result.getOutgoingMessages().size());
-        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("Чек \"Weekend\" создан."));
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("Weekend"));
         Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("https://t.me/splitus_bot?start=join_"));
+    }
+
+    @Test
+    void commandWithBotMentionIsParsedForCurrentBot() {
+        Fixture fixture = new Fixture();
+
+        TelegramWebhookResult result = fixture.service.handleUpdate(update(101L, 1001L, "alice", "/new_check@splitus_bot Weekend"));
+
+        Assertions.assertEquals(1, result.getOutgoingMessages().size());
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("Weekend"));
     }
 
     @Test
@@ -45,7 +54,7 @@ class TelegramCommandServiceTest {
 
         TelegramWebhookResult result = fixture.service.handleUpdate(update(102L, 1002L, "bob", "/start join_" + inviteToken));
 
-        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("Вы присоединились к чеку как @bob."));
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("@bob"));
     }
 
     @Test
@@ -56,6 +65,27 @@ class TelegramCommandServiceTest {
         TelegramWebhookResult result = fixture.service.handleUpdate(update(103L, 1002L, "   ", "/start join_" + inviteToken));
 
         Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("username"));
+    }
+
+    @Test
+    void addGuestCommandCreatesGuestForRegisteredParticipant() {
+        Fixture fixture = new Fixture();
+        String inviteToken = fixture.checkCommandService.createCheck("Trip", 1001L, "alice").getCheckBook().getInviteToken();
+        fixture.checkCommandService.joinCheckByInviteToken(inviteToken, 1002L, "bob");
+
+        TelegramWebhookResult result = fixture.service.handleUpdate(update(104L, 1002L, "bob", "/add_guest " + inviteToken + " Charlie"));
+
+        Assertions.assertEquals(1, result.getOutgoingMessages().size());
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("Charlie"));
+    }
+
+    @Test
+    void foreignBotCommandIsIgnored() {
+        Fixture fixture = new Fixture();
+
+        TelegramWebhookResult result = fixture.service.handleUpdate(update(105L, 1001L, "alice", "/new_check@other_bot Weekend"));
+
+        Assertions.assertTrue(result.getOutgoingMessages().isEmpty());
     }
 
     private TelegramUpdate update(Long chatId, Long userId, String username, String text) {

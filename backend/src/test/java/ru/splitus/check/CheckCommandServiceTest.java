@@ -112,6 +112,40 @@ class CheckCommandServiceTest {
     }
 
     @Test
+    void addGuestParticipantByInviteTokenRequiresRegisteredActor() {
+        TestContext context = new TestContext();
+        CheckSnapshot snapshot = context.service.createCheck("Trip", 1001L, "alice");
+
+        ApiException exception = Assertions.assertThrows(ApiException.class, () ->
+                context.service.addGuestParticipantByInviteToken(
+                        snapshot.getCheckBook().getInviteToken(),
+                        1002L,
+                        "bob",
+                        "Charlie"
+                )
+        );
+
+        Assertions.assertEquals(ApiErrorCode.PARTICIPANT_DOES_NOT_BELONG_TO_CHECK, exception.getCode());
+    }
+
+    @Test
+    void addGuestParticipantByInviteTokenCreatesGuestForRegisteredActor() {
+        TestContext context = new TestContext();
+        CheckSnapshot snapshot = context.service.createCheck("Trip", 1001L, "alice");
+        context.service.joinCheckByInviteToken(snapshot.getCheckBook().getInviteToken(), 1002L, "bob");
+
+        Participant participant = context.service.addGuestParticipantByInviteToken(
+                snapshot.getCheckBook().getInviteToken(),
+                1002L,
+                "bob",
+                "Charlie"
+        );
+
+        Assertions.assertEquals("Charlie", participant.getDisplayName());
+        Assertions.assertEquals(ParticipantType.GUEST, participant.getType());
+    }
+
+    @Test
     void mergeParticipantReassignsExpenseReferencesAndStoresHistory() {
         TestContext context = new TestContext();
         UUID checkId = UUID.randomUUID();
