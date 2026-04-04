@@ -161,6 +161,21 @@ class CheckCommandServiceTest {
     }
 
     @Test
+    void requireRegisteredParticipantReturnsJoinedParticipantByCheckId() {
+        TestContext context = new TestContext();
+        CheckSnapshot snapshot = context.service.createCheck("Trip", 1001L, "alice");
+        Participant joinedParticipant = context.service.joinCheckByInviteToken(snapshot.getCheckBook().getInviteToken(), 1002L, "bob");
+
+        Participant resolvedParticipant = context.service.requireRegisteredParticipant(
+                snapshot.getCheckBook().getId(),
+                1002L,
+                "bob"
+        );
+
+        Assertions.assertEquals(joinedParticipant.getId(), resolvedParticipant.getId());
+    }
+
+    @Test
     void mergeParticipantReassignsExpenseReferencesAndStoresHistory() {
         TestContext context = new TestContext();
         UUID checkId = UUID.randomUUID();

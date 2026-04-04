@@ -98,10 +98,29 @@ class TelegramCommandServiceTest {
         Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("1500"));
         Assertions.assertEquals(1, fixture.expenseRepository.expenses.size());
         Expense expense = fixture.expenseRepository.expenses.values().iterator().next();
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains(expense.getId().toString()));
         Assertions.assertEquals(Long.valueOf(104L), expense.getTelegramChatId());
         Assertions.assertEquals(Long.valueOf(1L), expense.getTelegramMessageId());
         Assertions.assertEquals("/add_expense " + inviteToken + " 1500 me,Charlie | Dinner", expense.getSourceMessageText());
         Assertions.assertEquals(2, fixture.expenseShareRepository.findByExpenseId(expense.getId()).size());
+    }
+
+    @Test
+    void deleteExpenseCommandRemovesOwnExpense() {
+        Fixture fixture = new Fixture();
+        String inviteToken = fixture.checkCommandService.createCheck("Trip", 1001L, "alice").getCheckBook().getInviteToken();
+        fixture.checkCommandService.joinCheckByInviteToken(inviteToken, 1002L, "bob");
+
+        fixture.service.handleUpdate(update(104L, 1002L, "bob", "/add_expense " + inviteToken + " 1500 me | Dinner"));
+        Expense expense = fixture.expenseRepository.expenses.values().iterator().next();
+
+        TelegramWebhookResult result = fixture.service.handleUpdate(
+                update(104L, 1002L, "bob", "/delete_expense " + expense.getId())
+        );
+
+        Assertions.assertEquals(1, result.getOutgoingMessages().size());
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains(expense.getId().toString()));
+        Assertions.assertFalse(fixture.expenseRepository.findById(expense.getId()).isPresent());
     }
 
     @Test
