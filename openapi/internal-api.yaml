@@ -262,6 +262,8 @@ components:
         ownerParticipantId:
           type: string
           format: uuid
+        inviteToken:
+          type: string
     AddRegisteredParticipantRequest:
       type: object
       required: [telegramUserId, telegramUsername]
