@@ -1,0 +1,300 @@
+openapi: 3.0.3
+info:
+  title: Split Us Internal API
+  version: 0.1.0
+  description: Draft внутреннего API для backend, Telegram-бота и админ-панели.
+servers:
+  - url: https://split-us.example.internal
+security:
+  - ServiceToken: []
+tags:
+  - name: Health
+  - name: Checks
+  - name: Participants
+  - name: Expenses
+  - name: Settlement
+  - name: Admin
+paths:
+  /api/internal/health/live:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Application is alive
+  /api/internal/health/ready:
+    get:
+      tags: [Health]
+      summary: Readiness probe
+      responses:
+        '200':
+          description: Application is ready
+  /api/internal/checks:
+    post:
+      tags: [Checks]
+      summary: Создать чек
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCheckRequest'
+      responses:
+        '201':
+          description: Check created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckView'
+  /api/internal/checks/{checkId}:
+    get:
+      tags: [Checks]
+      summary: Получить чек
+      parameters:
+        - $ref: '#/components/parameters/CheckId'
+      responses:
+        '200':
+          description: Check details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckView'
+  /api/internal/checks/{checkId}/participants/registered:
+    post:
+      tags: [Participants]
+      summary: Добавить зарегистрированного участника
+      parameters:
+        - $ref: '#/components/parameters/CheckId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddRegisteredParticipantRequest'
+      responses:
+        '201':
+          description: Participant created
+  /api/internal/checks/{checkId}/participants/guest:
+    post:
+      tags: [Participants]
+      summary: Добавить гостевого участника
+      parameters:
+        - $ref: '#/components/parameters/CheckId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddGuestParticipantRequest'
+      responses:
+        '201':
+          description: Guest participant created
+  /api/internal/checks/{checkId}/participants/{sourceParticipantId}/merge:
+    post:
+      tags: [Participants]
+      summary: Объединить гостевого участника с зарегистрированным
+      parameters:
+        - $ref: '#/components/parameters/CheckId'
+        - $ref: '#/components/parameters/SourceParticipantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MergeParticipantRequest'
+      responses:
+        '200':
+          description: Merge completed
+  /api/internal/checks/{checkId}/expenses:
+    post:
+      tags: [Expenses]
+      summary: Создать расход
+      parameters:
+        - $ref: '#/components/parameters/CheckId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExpenseRequest'
+      responses:
+        '201':
+          description: Expense created
+  /api/internal/expenses/{expenseId}:
+    patch:
+      tags: [Expenses]
+      summary: Обновить расход
+      parameters:
+        - $ref: '#/components/parameters/ExpenseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExpenseRequest'
+      responses:
+        '200':
+          description: Expense updated
+    delete:
+      tags: [Expenses]
+      summary: Удалить расход
+      parameters:
+        - $ref: '#/components/parameters/ExpenseId'
+      responses:
+        '204':
+          description: Expense deleted
+  /api/internal/checks/{checkId}/settlement:
+    post:
+      tags: [Settlement]
+      summary: Выполнить расчет
+      parameters:
+        - $ref: '#/components/parameters/CheckId'
+      responses:
+        '200':
+          description: Settlement plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettlementResponse'
+  /api/internal/admin/checks/{checkId}:
+    delete:
+      tags: [Admin]
+      summary: Удалить чек администратором
+      parameters:
+        - $ref: '#/components/parameters/CheckId'
+      responses:
+        '204':
+          description: Check deleted
+components:
+  securitySchemes:
+    ServiceToken:
+      type: apiKey
+      in: header
+      name: X-Service-Token
+  parameters:
+    CheckId:
+      name: checkId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ExpenseId:
+      name: expenseId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SourceParticipantId:
+      name: sourceParticipantId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    CreateCheckRequest:
+      type: object
+      required: [title, ownerTelegramUserId, ownerTelegramUsername]
+      properties:
+        title:
+          type: string
+        ownerTelegramUserId:
+          type: integer
+          format: int64
+        ownerTelegramUsername:
+          type: string
+    CheckView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        currencyCode:
+          type: string
+        ownerParticipantId:
+          type: string
+          format: uuid
+    AddRegisteredParticipantRequest:
+      type: object
+      required: [telegramUserId, telegramUsername]
+      properties:
+        telegramUserId:
+          type: integer
+          format: int64
+        telegramUsername:
+          type: string
+    AddGuestParticipantRequest:
+      type: object
+      required: [displayName]
+      properties:
+        displayName:
+          type: string
+    MergeParticipantRequest:
+      type: object
+      required: [targetParticipantId, performedByParticipantId]
+      properties:
+        targetParticipantId:
+          type: string
+          format: uuid
+        performedByParticipantId:
+          type: string
+          format: uuid
+    CreateExpenseRequest:
+      type: object
+      required: [payerParticipantId, amountMinor, splitParticipantIds]
+      properties:
+        payerParticipantId:
+          type: string
+          format: uuid
+        amountMinor:
+          type: integer
+          format: int64
+        comment:
+          type: string
+        sourceMessageText:
+          type: string
+        splitParticipantIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    UpdateExpenseRequest:
+      type: object
+      properties:
+        amountMinor:
+          type: integer
+          format: int64
+        comment:
+          type: string
+        splitParticipantIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        status:
+          type: string
+          enum: [VALID, INVALID, REQUIRES_CLARIFICATION]
+    SettlementTransfer:
+      type: object
+      required: [fromParticipant, toParticipant, amountMinor]
+      properties:
+        fromParticipant:
+          type: string
+        toParticipant:
+          type: string
+        amountMinor:
+          type: integer
+          format: int64
+    SettlementResponse:
+      type: object
+      properties:
+        transferCount:
+          type: integer
+        transfers:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettlementTransfer'
