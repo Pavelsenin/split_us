@@ -120,7 +120,37 @@ paths:
       responses:
         '201':
           description: Expense created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseResponse'
+    get:
+      tags: [Expenses]
+      summary: Получить список расходов по чеку
+      parameters:
+        - $ref: '#/components/parameters/CheckId'
+      responses:
+        '200':
+          description: Expense list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExpenseResponse'
   /api/internal/expenses/{expenseId}:
+    get:
+      tags: [Expenses]
+      summary: Получить расход
+      parameters:
+        - $ref: '#/components/parameters/ExpenseId'
+      responses:
+        '200':
+          description: Expense details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseResponse'
     patch:
       tags: [Expenses]
       summary: Обновить расход
@@ -135,11 +165,21 @@ paths:
       responses:
         '200':
           description: Expense updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseResponse'
     delete:
       tags: [Expenses]
       summary: Удалить расход
       parameters:
         - $ref: '#/components/parameters/ExpenseId'
+        - name: actorParticipantId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         '204':
           description: Expense deleted
@@ -245,7 +285,7 @@ components:
           format: uuid
     CreateExpenseRequest:
       type: object
-      required: [payerParticipantId, amountMinor, splitParticipantIds]
+      required: [payerParticipantId, amountMinor, splitParticipantIds, createdByParticipantId]
       properties:
         payerParticipantId:
           type: string
@@ -262,8 +302,12 @@ components:
           items:
             type: string
             format: uuid
+        createdByParticipantId:
+          type: string
+          format: uuid
     UpdateExpenseRequest:
       type: object
+      required: [updatedByParticipantId]
       properties:
         amountMinor:
           type: integer
@@ -275,9 +319,62 @@ components:
           items:
             type: string
             format: uuid
+        sourceMessageText:
+          type: string
         status:
           type: string
           enum: [VALID, INVALID, REQUIRES_CLARIFICATION]
+        updatedByParticipantId:
+          type: string
+          format: uuid
+    ExpenseShareResponse:
+      type: object
+      properties:
+        participantId:
+          type: string
+          format: uuid
+        shareMinor:
+          type: integer
+          format: int64
+    ExpenseResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        checkId:
+          type: string
+          format: uuid
+        amountMinor:
+          type: integer
+          format: int64
+        currencyCode:
+          type: string
+        payerParticipantId:
+          type: string
+          format: uuid
+        comment:
+          type: string
+        sourceMessageText:
+          type: string
+        status:
+          type: string
+        createdByParticipantId:
+          type: string
+          format: uuid
+        updatedByParticipantId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        shares:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenseShareResponse'
     SettlementTransfer:
       type: object
       required: [fromParticipant, toParticipant, amountMinor]
