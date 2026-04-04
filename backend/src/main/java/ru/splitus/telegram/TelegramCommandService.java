@@ -61,10 +61,16 @@ public class TelegramCommandService {
             if ("add_expense".equals(command.name)) {
                 return handleAddExpense(update, command.arguments);
             }
+            if ("list_expenses".equals(command.name)) {
+                return handleListExpenses(update, command.arguments);
+            }
+            if ("update_expense".equals(command.name)) {
+                return handleUpdateExpense(update, command.arguments);
+            }
             if ("delete_expense".equals(command.name)) {
                 return handleDeleteExpense(update, command.arguments);
             }
-            return reply(chatId, "Команда не поддерживается. Сейчас доступны /new_check, /start join_<token>, /add_guest, /add_expense и /delete_expense.");
+            return reply(chatId, "Команда не поддерживается. Сейчас доступны /new_check, /start join_<token>, /add_guest, /add_expense, /list_expenses, /update_expense и /delete_expense.");
         } catch (ApiException exception) {
             return reply(chatId, exception.getMessage());
         }
@@ -146,6 +152,63 @@ public class TelegramCommandService {
         );
     }
 
+    private TelegramWebhookResult handleListExpenses(TelegramUpdate update, String arguments) {
+        TelegramMessage message = update.getMessage();
+        TelegramUser from = requiredUser(message);
+        String inviteToken = requireNonBlank(arguments, "Используйте /list_expenses <invite_token>.");
+        checkCommandService.requireRegisteredParticipantByInviteToken(inviteToken, from.getId().longValue(), from.getUsername());
+        CheckSnapshot snapshot = checkCommandService.getCheckByInviteToken(inviteToken);
+        List<ExpenseDetails> expenses = expenseCommandService.listExpenses(snapshot.getCheckBook().getId());
+        if (expenses.isEmpty()) {
+            return reply(message.getChat().getId(), "В чеке пока нет расходов.");
+        }
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("Расходы по чеку \"").append(snapshot.getCheckBook().getTitle()).append("\":");
+        for (ExpenseDetails expenseDetails : expenses) {
+            builder.append("\n")
+                    .append(expenseDetails.getExpense().getId())
+                    .append(" | ")
+                    .append(expenseDetails.getExpense().getAmountMinor())
+                    .append(" RUB | ")
+                    .append(expenseDetails.getExpense().getStatus().name());
+            if (expenseDetails.getExpense().getComment() != null) {
+                builder.append(" | ").append(expenseDetails.getExpense().getComment());
+            }
+        }
+        return reply(message.getChat().getId(), builder.toString());
+    }
+
+    private TelegramWebhookResult handleUpdateExpense(TelegramUpdate update, String arguments) {
+        TelegramMessage message = update.getMessage();
+        TelegramUser from = requiredUser(message);
+        UpdateExpenseArguments parsed = parseUpdateExpenseArguments(arguments);
+        ExpenseDetails currentExpense = expenseCommandService.getExpense(parsed.expenseId);
+        Participant actorParticipant = checkCommandService.requireRegisteredParticipant(
+                currentExpense.getExpense().getCheckId(),
+                from.getId().longValue(),
+                from.getUsername()
+        );
+        CheckSnapshot snapshot = checkCommandService.getCheck(currentExpense.getExpense().getCheckId());
+        List<Participant> splitParticipants = resolveSplitParticipants(snapshot, actorParticipant, parsed.splitParticipantNames);
+
+        ExpenseDetails updatedExpense = expenseCommandService.updateExpense(
+                parsed.expenseId,
+                Long.valueOf(parsed.amountMinor),
+                parsed.comment,
+                message.getText(),
+                extractParticipantIds(splitParticipants),
+                null,
+                actorParticipant.getId()
+        );
+        return reply(
+                message.getChat().getId(),
+                "Расход " + updatedExpense.getExpense().getId() + " обновлен. Новая сумма: "
+                        + updatedExpense.getExpense().getAmountMinor() + " RUB. Делим на: "
+                        + joinParticipantNames(splitParticipants) + "."
+        );
+    }
+
     private TelegramWebhookResult handleDeleteExpense(TelegramUpdate update, String arguments) {
         TelegramMessage message = update.getMessage();
         TelegramUser from = requiredUser(message);
@@ -179,6 +242,27 @@ public class TelegramCommandService {
         long amountMinor = parseAmount(commandPart.substring(firstSpace + 1, secondSpace).trim());
         List<String> splitParticipantNames = parseSplitParticipantNames(commandPart.substring(secondSpace + 1).trim());
         return new AddExpenseArguments(inviteToken, amountMinor, splitParticipantNames, comment);
+    }
+
+    private UpdateExpenseArguments parseUpdateExpenseArguments(String arguments) {
+        String[] parts = arguments.split("\\|", 2);
+        String commandPart = parts[0].trim();
+        String comment = parts.length > 1 ? normalizeOptional(parts[1]) : null;
+
+        int firstSpace = commandPart.indexOf(' ');
+        int secondSpace = firstSpace < 0 ? -1 : commandPart.indexOf(' ', firstSpace + 1);
+        if (firstSpace <= 0 || secondSpace <= firstSpace + 1 || secondSpace == commandPart.length() - 1) {
+            throw new ApiException(
+                    ApiErrorCode.VALIDATION_ERROR,
+                    HttpStatus.BAD_REQUEST,
+                    "Используйте /update_expense <expense_id> <amount_minor> <участник1,участник2> | <комментарий>"
+            );
+        }
+
+        UUID expenseId = parseExpenseId(commandPart.substring(0, firstSpace).trim());
+        long amountMinor = parseAmount(commandPart.substring(firstSpace + 1, secondSpace).trim());
+        List<String> splitParticipantNames = parseSplitParticipantNames(commandPart.substring(secondSpace + 1).trim());
+        return new UpdateExpenseArguments(expenseId, amountMinor, splitParticipantNames, comment);
     }
 
     private long parseAmount(String value) {
@@ -290,6 +374,13 @@ public class TelegramCommandService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    private String requireNonBlank(String value, String message) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new ApiException(ApiErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST, message);
+        }
+        return value.trim();
+    }
+
     private ParsedCommand parseCommand(String text) {
         if (!text.startsWith("/")) {
             return null;
@@ -339,6 +430,20 @@ public class TelegramCommandService {
 
         private AddExpenseArguments(String inviteToken, long amountMinor, List<String> splitParticipantNames, String comment) {
             this.inviteToken = inviteToken;
+            this.amountMinor = amountMinor;
+            this.splitParticipantNames = splitParticipantNames;
+            this.comment = comment;
+        }
+    }
+
+    private static final class UpdateExpenseArguments {
+        private final UUID expenseId;
+        private final long amountMinor;
+        private final List<String> splitParticipantNames;
+        private final String comment;
+
+        private UpdateExpenseArguments(UUID expenseId, long amountMinor, List<String> splitParticipantNames, String comment) {
+            this.expenseId = expenseId;
             this.amountMinor = amountMinor;
             this.splitParticipantNames = splitParticipantNames;
             this.comment = comment;
