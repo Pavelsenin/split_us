@@ -1,7 +1,10 @@
 package ru.splitus.check;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -9,6 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.splitus.error.ApiErrorCode;
 import ru.splitus.error.ApiException;
+import ru.splitus.expense.Expense;
+import ru.splitus.expense.ExpenseRepository;
+import ru.splitus.expense.ExpenseShare;
+import ru.splitus.expense.ExpenseShareRepository;
 
 @Service
 public class CheckCommandService {
@@ -20,14 +27,23 @@ public class CheckCommandService {
     private final AppUserRepository appUserRepository;
     private final CheckBookRepository checkBookRepository;
     private final ParticipantRepository participantRepository;
+    private final ParticipantMergeRepository participantMergeRepository;
+    private final ExpenseRepository expenseRepository;
+    private final ExpenseShareRepository expenseShareRepository;
 
     public CheckCommandService(
             AppUserRepository appUserRepository,
             CheckBookRepository checkBookRepository,
-            ParticipantRepository participantRepository) {
+            ParticipantRepository participantRepository,
+            ParticipantMergeRepository participantMergeRepository,
+            ExpenseRepository expenseRepository,
+            ExpenseShareRepository expenseShareRepository) {
         this.appUserRepository = appUserRepository;
         this.checkBookRepository = checkBookRepository;
         this.participantRepository = participantRepository;
+        this.participantMergeRepository = participantMergeRepository;
+        this.expenseRepository = expenseRepository;
+        this.expenseShareRepository = expenseShareRepository;
     }
 
     @Transactional
@@ -112,6 +128,41 @@ public class CheckCommandService {
         return participantRepository.save(participant);
     }
 
+    @Transactional
+    public Participant mergeParticipant(UUID checkId, UUID sourceParticipantId, UUID targetParticipantId, UUID performedByParticipantId) {
+        CheckBook checkBook = loadCheck(checkId);
+        Map<UUID, Participant> participantMap = participantMap(checkId);
+
+        Participant sourceParticipant = loadParticipant(participantMap, sourceParticipantId);
+        Participant targetParticipant = loadParticipant(participantMap, targetParticipantId);
+        loadParticipant(participantMap, performedByParticipantId);
+
+        validateMergeParticipants(sourceParticipant, targetParticipant);
+
+        participantMergeRepository.save(new ParticipantMergeRecord(
+                UUID.randomUUID(),
+                checkBook.getId(),
+                sourceParticipant.getId(),
+                targetParticipant.getId(),
+                performedByParticipantId,
+                OffsetDateTime.now()
+        ));
+
+        Participant mergedSource = new Participant(
+                sourceParticipant.getId(),
+                sourceParticipant.getCheckId(),
+                sourceParticipant.getType(),
+                sourceParticipant.getDisplayName(),
+                sourceParticipant.getLinkedUserId(),
+                targetParticipant.getId(),
+                sourceParticipant.getCreatedAt()
+        );
+        participantRepository.update(mergedSource);
+
+        reassignExpenseReferences(checkBook.getId(), sourceParticipant.getId(), targetParticipant.getId());
+        return targetParticipant;
+    }
+
     private AppUser upsertUser(long telegramUserId, String normalizedUsername) {
         Optional<AppUser> existingUser = appUserRepository.findByTelegramUserId(telegramUserId);
         if (!existingUser.isPresent()) {
@@ -127,9 +178,29 @@ public class CheckCommandService {
         return user;
     }
 
+    private Participant loadParticipant(Map<UUID, Participant> participantMap, UUID participantId) {
+        Participant participant = participantMap.get(participantId);
+        if (participant == null) {
+            throw new ApiException(ApiErrorCode.PARTICIPANT_NOT_FOUND, HttpStatus.NOT_FOUND, "Participant not found");
+        }
+        if (!participant.isActive()) {
+            throw new ApiException(ApiErrorCode.PARTICIPANT_MERGE_INVALID, HttpStatus.CONFLICT, "Participant is already merged");
+        }
+        return participant;
+    }
+
     private CheckBook loadCheck(UUID checkId) {
         return checkBookRepository.findById(checkId)
                 .orElseThrow(() -> new ApiException(ApiErrorCode.CHECK_NOT_FOUND, HttpStatus.NOT_FOUND, "Чек не найден"));
+    }
+
+    private Map<UUID, Participant> participantMap(UUID checkId) {
+        List<Participant> participants = participantRepository.findByCheckId(checkId);
+        Map<UUID, Participant> result = new LinkedHashMap<UUID, Participant>();
+        for (Participant participant : participants) {
+            result.put(participant.getId(), participant);
+        }
+        return result;
     }
 
     private void ensureCheckCreationLimit(UUID ownerUserId) {
@@ -161,6 +232,81 @@ public class CheckCommandService {
                     HttpStatus.CONFLICT,
                     "Имя участника уже используется в этом чеке"
             );
+        }
+    }
+
+    private void validateMergeParticipants(Participant sourceParticipant, Participant targetParticipant) {
+        if (sourceParticipant.getId().equals(targetParticipant.getId())) {
+            throw new ApiException(ApiErrorCode.PARTICIPANT_MERGE_INVALID, HttpStatus.BAD_REQUEST, "Source and target participants must differ");
+        }
+        if (sourceParticipant.getType() != ParticipantType.GUEST) {
+            throw new ApiException(ApiErrorCode.PARTICIPANT_MERGE_INVALID, HttpStatus.BAD_REQUEST, "Only guest participant can be merged as source");
+        }
+        if (targetParticipant.getType() != ParticipantType.REGISTERED) {
+            throw new ApiException(ApiErrorCode.PARTICIPANT_MERGE_INVALID, HttpStatus.BAD_REQUEST, "Target participant must be registered");
+        }
+    }
+
+    private void reassignExpenseReferences(UUID checkId, UUID sourceParticipantId, UUID targetParticipantId) {
+        List<Expense> expenses = expenseRepository.findByCheckId(checkId);
+        for (Expense expense : expenses) {
+            boolean expenseChanged = false;
+            UUID payerParticipantId = expense.getPayerParticipantId();
+            UUID createdByParticipantId = expense.getCreatedByParticipantId();
+            UUID updatedByParticipantId = expense.getUpdatedByParticipantId();
+
+            if (sourceParticipantId.equals(payerParticipantId)) {
+                payerParticipantId = targetParticipantId;
+                expenseChanged = true;
+            }
+            if (sourceParticipantId.equals(createdByParticipantId)) {
+                createdByParticipantId = targetParticipantId;
+                expenseChanged = true;
+            }
+            if (sourceParticipantId.equals(updatedByParticipantId)) {
+                updatedByParticipantId = targetParticipantId;
+                expenseChanged = true;
+            }
+
+            if (expenseChanged) {
+                expenseRepository.update(new Expense(
+                        expense.getId(),
+                        expense.getCheckId(),
+                        expense.getAmountMinor(),
+                        expense.getCurrencyCode(),
+                        payerParticipantId,
+                        expense.getComment(),
+                        expense.getSourceMessageText(),
+                        expense.getTelegramChatId(),
+                        expense.getTelegramMessageId(),
+                        expense.getStatus(),
+                        createdByParticipantId,
+                        updatedByParticipantId,
+                        expense.getCreatedAt(),
+                        expense.getUpdatedAt()
+                ));
+            }
+
+            List<ExpenseShare> shares = expenseShareRepository.findByExpenseId(expense.getId());
+            boolean sharesChanged = false;
+            Map<UUID, Long> mergedShares = new LinkedHashMap<UUID, Long>();
+            for (ExpenseShare share : shares) {
+                UUID participantId = share.getParticipantId().equals(sourceParticipantId) ? targetParticipantId : share.getParticipantId();
+                if (!participantId.equals(share.getParticipantId())) {
+                    sharesChanged = true;
+                }
+                Long currentAmount = mergedShares.get(participantId);
+                mergedShares.put(participantId, Long.valueOf((currentAmount == null ? 0L : currentAmount.longValue()) + share.getShareMinor()));
+            }
+
+            if (sharesChanged) {
+                List<ExpenseShare> replacementShares = new ArrayList<ExpenseShare>();
+                for (Map.Entry<UUID, Long> entry : mergedShares.entrySet()) {
+                    replacementShares.add(new ExpenseShare(expense.getId(), entry.getKey(), entry.getValue().longValue()));
+                }
+                expenseShareRepository.deleteByExpenseId(expense.getId());
+                expenseShareRepository.saveAll(replacementShares);
+            }
         }
     }
 

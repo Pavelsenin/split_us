@@ -42,6 +42,21 @@ public class JdbcParticipantRepository implements ParticipantRepository {
     }
 
     @Override
+    public Participant update(Participant participant) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("id", participant.getId())
+                .addValue("displayName", participant.getDisplayName())
+                .addValue("linkedUserId", participant.getLinkedUserId())
+                .addValue("mergedIntoParticipantId", participant.getMergedIntoParticipantId());
+        jdbcTemplate.update(
+                "update participant set display_name = :displayName, linked_user_id = :linkedUserId, "
+                        + "merged_into_participant_id = :mergedIntoParticipantId where id = :id",
+                parameters
+        );
+        return participant;
+    }
+
+    @Override
     public int countByCheckId(UUID checkId) {
         Integer count = jdbcTemplate.queryForObject(
                 "select count(*) from participant where check_id = :checkId and merged_into_participant_id is null",
@@ -59,6 +74,16 @@ public class JdbcParticipantRepository implements ParticipantRepository {
                 Integer.class
         );
         return count != null && count.intValue() > 0;
+    }
+
+    @Override
+    public Optional<Participant> findById(UUID participantId) {
+        return jdbcTemplate.query(
+                "select id, check_id, participant_type, display_name, linked_user_id, merged_into_participant_id, created_at "
+                        + "from participant where id = :participantId",
+                new MapSqlParameterSource("participantId", participantId),
+                PARTICIPANT_ROW_MAPPER
+        ).stream().findFirst();
     }
 
     @Override

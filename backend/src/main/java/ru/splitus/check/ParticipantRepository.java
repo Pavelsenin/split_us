@@ -8,9 +8,13 @@ public interface ParticipantRepository {
 
     Participant save(Participant participant);
 
+    Participant update(Participant participant);
+
     int countByCheckId(UUID checkId);
 
     boolean existsByCheckIdAndDisplayName(UUID checkId, String displayName);
+
+    Optional<Participant> findById(UUID participantId);
 
     Optional<Participant> findActiveRegisteredParticipant(UUID checkId, UUID userId);
 
