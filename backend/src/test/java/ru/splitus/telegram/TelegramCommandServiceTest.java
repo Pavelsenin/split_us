@@ -19,7 +19,6 @@ import ru.splitus.check.Participant;
 import ru.splitus.check.ParticipantMergeRecord;
 import ru.splitus.check.ParticipantMergeRepository;
 import ru.splitus.check.ParticipantRepository;
-import ru.splitus.check.ParticipantType;
 import ru.splitus.config.TelegramWebhookProperties;
 import ru.splitus.expense.Expense;
 import ru.splitus.expense.ExpenseCommandService;
@@ -102,6 +101,47 @@ class TelegramCommandServiceTest {
         Assertions.assertEquals(Long.valueOf(104L), expense.getTelegramChatId());
         Assertions.assertEquals(Long.valueOf(1L), expense.getTelegramMessageId());
         Assertions.assertEquals("/add_expense " + inviteToken + " 1500 me,Charlie | Dinner", expense.getSourceMessageText());
+        Assertions.assertEquals(2, fixture.expenseShareRepository.findByExpenseId(expense.getId()).size());
+    }
+
+    @Test
+    void listExpensesCommandReturnsCreatedExpenses() {
+        Fixture fixture = new Fixture();
+        String inviteToken = fixture.checkCommandService.createCheck("Trip", 1001L, "alice").getCheckBook().getInviteToken();
+        fixture.checkCommandService.joinCheckByInviteToken(inviteToken, 1002L, "bob");
+
+        fixture.service.handleUpdate(update(104L, 1002L, "bob", "/add_expense " + inviteToken + " 1500 me | Dinner"));
+        Expense expense = fixture.expenseRepository.expenses.values().iterator().next();
+
+        TelegramWebhookResult result = fixture.service.handleUpdate(
+                update(104L, 1002L, "bob", "/list_expenses " + inviteToken)
+        );
+
+        Assertions.assertEquals(1, result.getOutgoingMessages().size());
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains(expense.getId().toString()));
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("Dinner"));
+    }
+
+    @Test
+    void updateExpenseCommandUpdatesAmountCommentAndSplit() {
+        Fixture fixture = new Fixture();
+        String inviteToken = fixture.checkCommandService.createCheck("Trip", 1001L, "alice").getCheckBook().getInviteToken();
+        fixture.checkCommandService.joinCheckByInviteToken(inviteToken, 1002L, "bob");
+        fixture.checkCommandService.addGuestParticipantByInviteToken(inviteToken, 1002L, "bob", "Charlie");
+
+        fixture.service.handleUpdate(update(104L, 1002L, "bob", "/add_expense " + inviteToken + " 1500 me | Dinner"));
+        Expense expense = fixture.expenseRepository.expenses.values().iterator().next();
+
+        TelegramWebhookResult result = fixture.service.handleUpdate(
+                update(104L, 1002L, "bob", "/update_expense " + expense.getId() + " 2100 me,Charlie | Team dinner")
+        );
+
+        Expense updatedExpense = fixture.expenseRepository.findById(expense.getId()).get();
+        Assertions.assertEquals(1, result.getOutgoingMessages().size());
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains(expense.getId().toString()));
+        Assertions.assertEquals(2100L, updatedExpense.getAmountMinor());
+        Assertions.assertEquals("Team dinner", updatedExpense.getComment());
+        Assertions.assertEquals("/update_expense " + expense.getId() + " 2100 me,Charlie | Team dinner", updatedExpense.getSourceMessageText());
         Assertions.assertEquals(2, fixture.expenseShareRepository.findByExpenseId(expense.getId()).size());
     }
 
