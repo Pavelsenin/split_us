@@ -30,6 +30,7 @@ class CheckCommandServiceTest {
 
         Assertions.assertEquals("Weekend", snapshot.getCheckBook().getTitle());
         Assertions.assertEquals("RUB", snapshot.getCheckBook().getCurrencyCode());
+        Assertions.assertNotNull(snapshot.getCheckBook().getInviteToken());
         Assertions.assertEquals(1, snapshot.getParticipants().size());
         Assertions.assertEquals("alice", snapshot.getParticipants().get(0).getDisplayName());
         Assertions.assertEquals(ParticipantType.REGISTERED, snapshot.getParticipants().get(0).getType());
@@ -93,6 +94,21 @@ class CheckCommandServiceTest {
         );
 
         Assertions.assertEquals(ApiErrorCode.VALIDATION_ERROR, exception.getCode());
+    }
+
+    @Test
+    void joinCheckByInviteTokenAddsRegisteredParticipant() {
+        TestContext context = new TestContext();
+        CheckSnapshot snapshot = context.service.createCheck("Trip", 1001L, "alice");
+
+        Participant participant = context.service.joinCheckByInviteToken(
+                snapshot.getCheckBook().getInviteToken(),
+                1002L,
+                "@bob"
+        );
+
+        Assertions.assertEquals("bob", participant.getDisplayName());
+        Assertions.assertEquals(ParticipantType.REGISTERED, participant.getType());
     }
 
     @Test
@@ -214,6 +230,16 @@ class CheckCommandServiceTest {
         @Override
         public Optional<CheckBook> findById(UUID checkId) {
             return Optional.ofNullable(checks.get(checkId));
+        }
+
+        @Override
+        public Optional<CheckBook> findByInviteToken(String inviteToken) {
+            for (CheckBook checkBook : checks.values()) {
+                if (inviteToken.equals(checkBook.getInviteToken())) {
+                    return Optional.of(checkBook);
+                }
+            }
+            return Optional.empty();
         }
 
         @Override

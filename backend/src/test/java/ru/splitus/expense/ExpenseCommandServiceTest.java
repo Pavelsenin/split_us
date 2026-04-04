@@ -242,6 +242,11 @@ class ExpenseCommandServiceTest {
         }
 
         @Override
+        public Optional<CheckBook> findByInviteToken(String inviteToken) {
+            return Optional.empty();
+        }
+
+        @Override
         public int countCreatedByOwnerSince(UUID ownerUserId, OffsetDateTime since) {
             return 0;
         }
