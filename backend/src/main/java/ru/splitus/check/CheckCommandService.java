@@ -55,7 +55,7 @@ public class CheckCommandService {
         ensureCheckCreationLimit(owner.getId());
 
         OffsetDateTime now = OffsetDateTime.now();
-        CheckBook checkBook = new CheckBook(UUID.randomUUID(), normalizedTitle, owner.getId(), null, RUB, true, now);
+        CheckBook checkBook = new CheckBook(UUID.randomUUID(), normalizedTitle, owner.getId(), generateInviteToken(), null, RUB, true, now);
         checkBookRepository.save(checkBook);
 
         Participant ownerParticipant = new Participant(
@@ -126,6 +126,14 @@ public class CheckCommandService {
                 OffsetDateTime.now()
         );
         return participantRepository.save(participant);
+    }
+
+    @Transactional
+    public Participant joinCheckByInviteToken(String inviteToken, long telegramUserId, String telegramUsername) {
+        String normalizedInviteToken = requireNonBlank(inviteToken, "Invite token is required");
+        CheckBook checkBook = checkBookRepository.findByInviteToken(normalizedInviteToken)
+                .orElseThrow(() -> new ApiException(ApiErrorCode.CHECK_NOT_FOUND, HttpStatus.NOT_FOUND, "Check not found"));
+        return addRegisteredParticipant(checkBook.getId(), telegramUserId, telegramUsername);
     }
 
     @Transactional
@@ -330,5 +338,9 @@ public class CheckCommandService {
             );
         }
         return normalized;
+    }
+
+    private String generateInviteToken() {
+        return UUID.randomUUID().toString().replace("-", "");
     }
 }

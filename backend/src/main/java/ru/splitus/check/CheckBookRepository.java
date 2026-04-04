@@ -10,6 +10,7 @@ public interface CheckBookRepository {
 
     Optional<CheckBook> findById(UUID checkId);
 
+    Optional<CheckBook> findByInviteToken(String inviteToken);
+
     int countCreatedByOwnerSince(UUID ownerUserId, OffsetDateTime since);
 }
-

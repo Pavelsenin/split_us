@@ -12,6 +12,7 @@ public class CheckResponse {
     private String title;
     private String currencyCode;
     private UUID ownerUserId;
+    private String inviteToken;
     private Long telegramChatId;
     private boolean chatActive;
     private OffsetDateTime createdAt;
@@ -23,6 +24,7 @@ public class CheckResponse {
         response.title = snapshot.getCheckBook().getTitle();
         response.currencyCode = snapshot.getCheckBook().getCurrencyCode();
         response.ownerUserId = snapshot.getCheckBook().getOwnerUserId();
+        response.inviteToken = snapshot.getCheckBook().getInviteToken();
         response.telegramChatId = snapshot.getCheckBook().getTelegramChatId();
         response.chatActive = snapshot.getCheckBook().isChatActive();
         response.createdAt = snapshot.getCheckBook().getCreatedAt();
@@ -48,6 +50,10 @@ public class CheckResponse {
         return ownerUserId;
     }
 
+    public String getInviteToken() {
+        return inviteToken;
+    }
+
     public Long getTelegramChatId() {
         return telegramChatId;
     }
@@ -64,4 +70,3 @@ public class CheckResponse {
         return participants;
     }
 }
-

@@ -27,13 +27,14 @@ public class JdbcCheckBookRepository implements CheckBookRepository {
                 .addValue("id", checkBook.getId())
                 .addValue("title", checkBook.getTitle())
                 .addValue("ownerUserId", checkBook.getOwnerUserId())
+                .addValue("inviteToken", checkBook.getInviteToken())
                 .addValue("telegramChatId", checkBook.getTelegramChatId())
                 .addValue("currencyCode", checkBook.getCurrencyCode())
                 .addValue("chatActive", Boolean.valueOf(checkBook.isChatActive()))
                 .addValue("createdAt", checkBook.getCreatedAt());
         jdbcTemplate.update(
-                "insert into check_book(id, title, owner_user_id, telegram_chat_id, currency_code, chat_active, created_at) "
-                        + "values (:id, :title, :ownerUserId, :telegramChatId, :currencyCode, :chatActive, :createdAt)",
+                "insert into check_book(id, title, owner_user_id, invite_token, telegram_chat_id, currency_code, chat_active, created_at) "
+                        + "values (:id, :title, :ownerUserId, :inviteToken, :telegramChatId, :currencyCode, :chatActive, :createdAt)",
                 parameters
         );
         return checkBook;
@@ -42,9 +43,19 @@ public class JdbcCheckBookRepository implements CheckBookRepository {
     @Override
     public Optional<CheckBook> findById(UUID checkId) {
         return jdbcTemplate.query(
-                "select id, title, owner_user_id, telegram_chat_id, currency_code, chat_active, created_at "
+                "select id, title, owner_user_id, invite_token, telegram_chat_id, currency_code, chat_active, created_at "
                         + "from check_book where id = :id",
                 new MapSqlParameterSource("id", checkId),
+                CHECK_ROW_MAPPER
+        ).stream().findFirst();
+    }
+
+    @Override
+    public Optional<CheckBook> findByInviteToken(String inviteToken) {
+        return jdbcTemplate.query(
+                "select id, title, owner_user_id, invite_token, telegram_chat_id, currency_code, chat_active, created_at "
+                        + "from check_book where invite_token = :inviteToken",
+                new MapSqlParameterSource("inviteToken", inviteToken),
                 CHECK_ROW_MAPPER
         ).stream().findFirst();
     }
@@ -67,6 +78,7 @@ public class JdbcCheckBookRepository implements CheckBookRepository {
                     rs.getObject("id", UUID.class),
                     rs.getString("title"),
                     rs.getObject("owner_user_id", UUID.class),
+                    rs.getString("invite_token"),
                     telegramChatId,
                     rs.getString("currency_code"),
                     rs.getBoolean("chat_active"),
@@ -75,4 +87,3 @@ public class JdbcCheckBookRepository implements CheckBookRepository {
         }
     };
 }
-
