@@ -17,6 +17,7 @@ import ru.splitus.web.dto.AddGuestParticipantRequest;
 import ru.splitus.web.dto.AddRegisteredParticipantRequest;
 import ru.splitus.web.dto.CheckResponse;
 import ru.splitus.web.dto.CreateCheckRequest;
+import ru.splitus.web.dto.MergeParticipantRequest;
 import ru.splitus.web.dto.ParticipantResponse;
 
 @RestController
@@ -65,5 +66,18 @@ public class InternalCheckController {
         );
         return ResponseEntity.created(URI.create("/api/internal/checks/" + checkId + "/participants/" + participant.getId()))
                 .body(ParticipantResponse.fromDomain(participant));
+    }
+
+    @PostMapping("/{checkId}/participants/{sourceParticipantId}/merge")
+    public ParticipantResponse mergeParticipant(
+            @PathVariable UUID checkId,
+            @PathVariable UUID sourceParticipantId,
+            @Valid @RequestBody MergeParticipantRequest request) {
+        return ParticipantResponse.fromDomain(checkCommandService.mergeParticipant(
+                checkId,
+                sourceParticipantId,
+                request.getTargetParticipantId(),
+                request.getPerformedByParticipantId()
+        ));
     }
 }
