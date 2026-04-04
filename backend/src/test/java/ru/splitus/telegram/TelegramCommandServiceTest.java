@@ -25,6 +25,7 @@ import ru.splitus.expense.ExpenseCommandService;
 import ru.splitus.expense.ExpenseRepository;
 import ru.splitus.expense.ExpenseShare;
 import ru.splitus.expense.ExpenseShareRepository;
+import ru.splitus.expense.ExpenseStatus;
 
 class TelegramCommandServiceTest {
 
@@ -166,6 +167,25 @@ class TelegramCommandServiceTest {
         Assertions.assertEquals("Edited dinner", updatedExpense.getComment());
         Assertions.assertEquals("/add_expense " + inviteToken + " 2200 me,Charlie | Edited dinner", updatedExpense.getSourceMessageText());
         Assertions.assertEquals(2, fixture.expenseShareRepository.findByExpenseId(expense.getId()).size());
+    }
+
+    @Test
+    void invalidEditedAddExpenseMessageMarksExpenseForClarification() {
+        Fixture fixture = new Fixture();
+        String inviteToken = fixture.checkCommandService.createCheck("Trip", 1001L, "alice").getCheckBook().getInviteToken();
+        fixture.checkCommandService.joinCheckByInviteToken(inviteToken, 1002L, "bob");
+
+        fixture.service.handleUpdate(update(104L, 1002L, "bob", "/add_expense " + inviteToken + " 1500 me | Dinner"));
+        Expense expense = fixture.expenseRepository.expenses.values().iterator().next();
+
+        TelegramWebhookResult result = fixture.service.handleUpdate(
+                editedUpdate(104L, 1002L, "bob", 1L, "/add_expense " + inviteToken + " broken_payload")
+        );
+
+        Expense updatedExpense = fixture.expenseRepository.findById(expense.getId()).get();
+        Assertions.assertEquals(1, result.getOutgoingMessages().size());
+        Assertions.assertEquals(ExpenseStatus.REQUIRES_CLARIFICATION, updatedExpense.getStatus());
+        Assertions.assertEquals("/add_expense " + inviteToken + " broken_payload", updatedExpense.getSourceMessageText());
     }
 
     @Test
