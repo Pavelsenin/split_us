@@ -7,6 +7,7 @@ public class TelegramWebhookProperties {
 
     private String pathAlias;
     private String secretToken;
+    private String botUsername;
 
     public String getPathAlias() {
         return pathAlias;
@@ -23,5 +24,12 @@ public class TelegramWebhookProperties {
     public void setSecretToken(String secretToken) {
         this.secretToken = secretToken;
     }
-}
 
+    public String getBotUsername() {
+        return botUsername;
+    }
+
+    public void setBotUsername(String botUsername) {
+        this.botUsername = botUsername;
+    }
+}
