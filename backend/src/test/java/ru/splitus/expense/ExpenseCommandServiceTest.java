@@ -257,6 +257,18 @@ class ExpenseCommandServiceTest {
         }
 
         @Override
+        public Participant update(Participant participant) {
+            for (int i = 0; i < participants.size(); i++) {
+                if (participants.get(i).getId().equals(participant.getId())) {
+                    participants.set(i, participant);
+                    return participant;
+                }
+            }
+            participants.add(participant);
+            return participant;
+        }
+
+        @Override
         public int countByCheckId(UUID checkId) {
             return 0;
         }
@@ -264,6 +276,16 @@ class ExpenseCommandServiceTest {
         @Override
         public boolean existsByCheckIdAndDisplayName(UUID checkId, String displayName) {
             return false;
+        }
+
+        @Override
+        public Optional<Participant> findById(UUID participantId) {
+            for (Participant participant : participants) {
+                if (participant.getId().equals(participantId)) {
+                    return Optional.of(participant);
+                }
+            }
+            return Optional.empty();
         }
 
         @Override
