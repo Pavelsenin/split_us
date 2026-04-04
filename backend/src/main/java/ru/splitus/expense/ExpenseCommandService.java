@@ -47,7 +47,53 @@ public class ExpenseCommandService {
             String sourceMessageText,
             List<UUID> splitParticipantIds,
             UUID actorParticipantId) {
+        return createExpenseInternal(
+                checkId,
+                payerParticipantId,
+                amountMinor,
+                comment,
+                sourceMessageText,
+                null,
+                null,
+                splitParticipantIds,
+                actorParticipantId
+        );
+    }
 
+    @Transactional
+    public ExpenseDetails createTelegramExpense(
+            UUID checkId,
+            UUID payerParticipantId,
+            long amountMinor,
+            String comment,
+            String sourceMessageText,
+            Long telegramChatId,
+            Long telegramMessageId,
+            List<UUID> splitParticipantIds,
+            UUID actorParticipantId) {
+        return createExpenseInternal(
+                checkId,
+                payerParticipantId,
+                amountMinor,
+                comment,
+                sourceMessageText,
+                telegramChatId,
+                telegramMessageId,
+                splitParticipantIds,
+                actorParticipantId
+        );
+    }
+
+    private ExpenseDetails createExpenseInternal(
+            UUID checkId,
+            UUID payerParticipantId,
+            long amountMinor,
+            String comment,
+            String sourceMessageText,
+            Long telegramChatId,
+            Long telegramMessageId,
+            List<UUID> splitParticipantIds,
+            UUID actorParticipantId) {
         CheckBook checkBook = loadCheck(checkId);
         Map<UUID, Participant> activeParticipants = activeParticipantMap(checkId);
         ensureParticipantInCheck(activeParticipants, actorParticipantId);
@@ -66,8 +112,8 @@ public class ExpenseCommandService {
                 payerParticipantId,
                 normalizeOptional(comment),
                 normalizeOptional(sourceMessageText),
-                null,
-                null,
+                telegramChatId,
+                telegramMessageId,
                 ExpenseStatus.VALID,
                 actorParticipantId,
                 actorParticipantId,

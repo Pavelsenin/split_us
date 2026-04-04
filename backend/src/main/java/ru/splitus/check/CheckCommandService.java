@@ -134,21 +134,32 @@ public class CheckCommandService {
         return addRegisteredParticipant(checkBook.getId(), telegramUserId, telegramUsername);
     }
 
+    @Transactional(readOnly = true)
+    public CheckSnapshot getCheckByInviteToken(String inviteToken) {
+        CheckBook checkBook = loadCheckByInviteToken(inviteToken);
+        return new CheckSnapshot(checkBook, participantRepository.findByCheckId(checkBook.getId()));
+    }
+
+    @Transactional
+    public Participant requireRegisteredParticipantByInviteToken(String inviteToken, long telegramUserId, String telegramUsername) {
+        CheckBook checkBook = loadCheckByInviteToken(inviteToken);
+        AppUser actor = upsertUser(telegramUserId, normalizeTelegramUsername(telegramUsername));
+        return participantRepository.findActiveRegisteredParticipant(checkBook.getId(), actor.getId())
+                .orElseThrow(() -> new ApiException(
+                        ApiErrorCode.PARTICIPANT_DOES_NOT_BELONG_TO_CHECK,
+                        HttpStatus.FORBIDDEN,
+                        "Пользователь еще не присоединился к этому чеку"
+                ));
+    }
+
     @Transactional
     public Participant addGuestParticipantByInviteToken(
             String inviteToken,
             long actorTelegramUserId,
             String actorTelegramUsername,
             String guestDisplayName) {
-        CheckBook checkBook = loadCheckByInviteToken(inviteToken);
-        AppUser actor = upsertUser(actorTelegramUserId, normalizeTelegramUsername(actorTelegramUsername));
-        participantRepository.findActiveRegisteredParticipant(checkBook.getId(), actor.getId())
-                .orElseThrow(() -> new ApiException(
-                        ApiErrorCode.PARTICIPANT_DOES_NOT_BELONG_TO_CHECK,
-                        HttpStatus.FORBIDDEN,
-                        "Добавлять гостей может только зарегистрированный участник этого чека"
-                ));
-        return addGuestParticipant(checkBook.getId(), guestDisplayName);
+        Participant actorParticipant = requireRegisteredParticipantByInviteToken(inviteToken, actorTelegramUserId, actorTelegramUsername);
+        return addGuestParticipant(actorParticipant.getCheckId(), guestDisplayName);
     }
 
     @Transactional
