@@ -11,22 +11,27 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.splitus.config.TelegramWebhookProperties;
+import ru.splitus.telegram.TelegramCommandService;
+import ru.splitus.telegram.TelegramUpdate;
+import ru.splitus.telegram.TelegramWebhookResult;
 
 @RestController
 @RequestMapping("/api/telegram/webhook")
 public class TelegramWebhookController {
 
     private final TelegramWebhookProperties properties;
+    private final TelegramCommandService telegramCommandService;
 
-    public TelegramWebhookController(TelegramWebhookProperties properties) {
+    public TelegramWebhookController(TelegramWebhookProperties properties, TelegramCommandService telegramCommandService) {
         this.properties = properties;
+        this.telegramCommandService = telegramCommandService;
     }
 
     @PostMapping("/{alias}")
     public ResponseEntity<Map<String, Object>> acceptUpdate(
             @PathVariable String alias,
             @RequestHeader(value = "X-Telegram-Bot-Api-Secret-Token", required = false) String secretToken,
-            @RequestBody(required = false) Map<String, Object> updateBody) {
+            @RequestBody(required = false) TelegramUpdate updateBody) {
 
         if (!properties.getPathAlias().equals(alias)) {
             return response(HttpStatus.NOT_FOUND, "unknown webhook alias");
@@ -36,9 +41,11 @@ public class TelegramWebhookController {
             return response(HttpStatus.UNAUTHORIZED, "invalid webhook secret");
         }
 
+        TelegramWebhookResult result = telegramCommandService.handleUpdate(updateBody);
         Map<String, Object> payload = new LinkedHashMap<String, Object>();
-        payload.put("accepted", Boolean.TRUE);
-        payload.put("payloadPresent", Boolean.valueOf(updateBody != null && !updateBody.isEmpty()));
+        payload.put("accepted", Boolean.valueOf(result.isAccepted()));
+        payload.put("payloadPresent", Boolean.valueOf(updateBody != null));
+        payload.put("outgoingMessages", result.getOutgoingMessages());
         return ResponseEntity.accepted().body(payload);
     }
 
