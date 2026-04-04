@@ -19,8 +19,12 @@ import ru.splitus.check.Participant;
 import ru.splitus.check.ParticipantMergeRecord;
 import ru.splitus.check.ParticipantMergeRepository;
 import ru.splitus.check.ParticipantRepository;
+import ru.splitus.check.ParticipantType;
 import ru.splitus.config.TelegramWebhookProperties;
+import ru.splitus.expense.Expense;
+import ru.splitus.expense.ExpenseCommandService;
 import ru.splitus.expense.ExpenseRepository;
+import ru.splitus.expense.ExpenseShare;
 import ru.splitus.expense.ExpenseShareRepository;
 
 class TelegramCommandServiceTest {
@@ -80,6 +84,41 @@ class TelegramCommandServiceTest {
     }
 
     @Test
+    void addExpenseCommandCreatesExpenseFromTelegramMessage() {
+        Fixture fixture = new Fixture();
+        String inviteToken = fixture.checkCommandService.createCheck("Trip", 1001L, "alice").getCheckBook().getInviteToken();
+        fixture.checkCommandService.joinCheckByInviteToken(inviteToken, 1002L, "bob");
+        fixture.checkCommandService.addGuestParticipantByInviteToken(inviteToken, 1002L, "bob", "Charlie");
+
+        TelegramWebhookResult result = fixture.service.handleUpdate(
+                update(104L, 1002L, "bob", "/add_expense " + inviteToken + " 1500 me,Charlie | Dinner")
+        );
+
+        Assertions.assertEquals(1, result.getOutgoingMessages().size());
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("1500"));
+        Assertions.assertEquals(1, fixture.expenseRepository.expenses.size());
+        Expense expense = fixture.expenseRepository.expenses.values().iterator().next();
+        Assertions.assertEquals(Long.valueOf(104L), expense.getTelegramChatId());
+        Assertions.assertEquals(Long.valueOf(1L), expense.getTelegramMessageId());
+        Assertions.assertEquals("/add_expense " + inviteToken + " 1500 me,Charlie | Dinner", expense.getSourceMessageText());
+        Assertions.assertEquals(2, fixture.expenseShareRepository.findByExpenseId(expense.getId()).size());
+    }
+
+    @Test
+    void addExpenseCommandRejectsUnknownParticipant() {
+        Fixture fixture = new Fixture();
+        String inviteToken = fixture.checkCommandService.createCheck("Trip", 1001L, "alice").getCheckBook().getInviteToken();
+        fixture.checkCommandService.joinCheckByInviteToken(inviteToken, 1002L, "bob");
+
+        TelegramWebhookResult result = fixture.service.handleUpdate(
+                update(104L, 1002L, "bob", "/add_expense " + inviteToken + " 1500 Ghost | Dinner")
+        );
+
+        Assertions.assertEquals(1, result.getOutgoingMessages().size());
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("не найден"));
+    }
+
+    @Test
     void foreignBotCommandIsIgnored() {
         Fixture fixture = new Fixture();
 
@@ -115,8 +154,8 @@ class TelegramCommandServiceTest {
         private final InMemoryCheckBookRepository checkBookRepository = new InMemoryCheckBookRepository();
         private final InMemoryParticipantRepository participantRepository = new InMemoryParticipantRepository();
         private final InMemoryParticipantMergeRepository participantMergeRepository = new InMemoryParticipantMergeRepository();
-        private final NoOpExpenseRepository expenseRepository = new NoOpExpenseRepository();
-        private final NoOpExpenseShareRepository expenseShareRepository = new NoOpExpenseShareRepository();
+        private final InMemoryExpenseRepository expenseRepository = new InMemoryExpenseRepository();
+        private final InMemoryExpenseShareRepository expenseShareRepository = new InMemoryExpenseShareRepository();
         private final CheckCommandService checkCommandService = new CheckCommandService(
                 appUserRepository,
                 checkBookRepository,
@@ -125,12 +164,18 @@ class TelegramCommandServiceTest {
                 expenseRepository,
                 expenseShareRepository
         );
+        private final ExpenseCommandService expenseCommandService = new ExpenseCommandService(
+                checkBookRepository,
+                participantRepository,
+                expenseRepository,
+                expenseShareRepository
+        );
         private final TelegramCommandService service;
 
         private Fixture() {
             TelegramWebhookProperties properties = new TelegramWebhookProperties();
             properties.setBotUsername("splitus_bot");
-            this.service = new TelegramCommandService(checkCommandService, properties);
+            this.service = new TelegramCommandService(checkCommandService, expenseCommandService, properties);
         }
     }
 
@@ -276,44 +321,66 @@ class TelegramCommandServiceTest {
         }
     }
 
-    private static class NoOpExpenseRepository implements ExpenseRepository {
+    private static class InMemoryExpenseRepository implements ExpenseRepository {
+        private final Map<UUID, Expense> expenses = new HashMap<UUID, Expense>();
+
         @Override
-        public ru.splitus.expense.Expense save(ru.splitus.expense.Expense expense) {
+        public Expense save(Expense expense) {
+            expenses.put(expense.getId(), expense);
             return expense;
         }
 
         @Override
-        public ru.splitus.expense.Expense update(ru.splitus.expense.Expense expense) {
+        public Expense update(Expense expense) {
+            expenses.put(expense.getId(), expense);
             return expense;
         }
 
         @Override
-        public Optional<ru.splitus.expense.Expense> findById(UUID expenseId) {
-            return Optional.empty();
+        public Optional<Expense> findById(UUID expenseId) {
+            return Optional.ofNullable(expenses.get(expenseId));
         }
 
         @Override
-        public List<ru.splitus.expense.Expense> findByCheckId(UUID checkId) {
-            return java.util.Collections.emptyList();
+        public List<Expense> findByCheckId(UUID checkId) {
+            List<Expense> result = new ArrayList<Expense>();
+            for (Expense expense : expenses.values()) {
+                if (expense.getCheckId().equals(checkId)) {
+                    result.add(expense);
+                }
+            }
+            result.sort(Comparator.comparing(Expense::getCreatedAt));
+            return result;
         }
 
         @Override
         public void deleteById(UUID expenseId) {
+            expenses.remove(expenseId);
         }
     }
 
-    private static class NoOpExpenseShareRepository implements ExpenseShareRepository {
+    private static class InMemoryExpenseShareRepository implements ExpenseShareRepository {
+        private final List<ExpenseShare> shares = new ArrayList<ExpenseShare>();
+
         @Override
-        public void saveAll(List<ru.splitus.expense.ExpenseShare> shares) {
+        public void saveAll(List<ExpenseShare> sharesToSave) {
+            shares.addAll(sharesToSave);
         }
 
         @Override
-        public List<ru.splitus.expense.ExpenseShare> findByExpenseId(UUID expenseId) {
-            return java.util.Collections.emptyList();
+        public List<ExpenseShare> findByExpenseId(UUID expenseId) {
+            List<ExpenseShare> result = new ArrayList<ExpenseShare>();
+            for (ExpenseShare share : shares) {
+                if (share.getExpenseId().equals(expenseId)) {
+                    result.add(share);
+                }
+            }
+            return result;
         }
 
         @Override
         public void deleteByExpenseId(UUID expenseId) {
+            shares.removeIf(share -> share.getExpenseId().equals(expenseId));
         }
     }
 }

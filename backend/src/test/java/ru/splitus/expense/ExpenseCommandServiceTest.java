@@ -138,6 +138,27 @@ class ExpenseCommandServiceTest {
         Assertions.assertTrue(fixture.shareRepository.findByExpenseId(created.getExpense().getId()).isEmpty());
     }
 
+    @Test
+    void createTelegramExpenseStoresSourceMessageMetadata() {
+        Fixture fixture = new Fixture();
+
+        ExpenseDetails created = fixture.service.createTelegramExpense(
+                fixture.checkId,
+                fixture.aliceId,
+                1500L,
+                "Dinner",
+                "/add_expense token 1500 me,bob | Dinner",
+                777L,
+                55L,
+                Arrays.asList(fixture.aliceId, fixture.bobId),
+                fixture.aliceId
+        );
+
+        Assertions.assertEquals(Long.valueOf(777L), created.getExpense().getTelegramChatId());
+        Assertions.assertEquals(Long.valueOf(55L), created.getExpense().getTelegramMessageId());
+        Assertions.assertEquals("/add_expense token 1500 me,bob | Dinner", created.getExpense().getSourceMessageText());
+    }
+
     private static class Fixture {
         private final InMemoryCheckBookRepository checkRepository = new InMemoryCheckBookRepository();
         private final InMemoryParticipantRepository participantRepository = new InMemoryParticipantRepository();
