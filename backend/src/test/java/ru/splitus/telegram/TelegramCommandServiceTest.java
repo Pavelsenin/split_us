@@ -146,6 +146,29 @@ class TelegramCommandServiceTest {
     }
 
     @Test
+    void editedAddExpenseMessageSynchronizesExistingExpense() {
+        Fixture fixture = new Fixture();
+        String inviteToken = fixture.checkCommandService.createCheck("Trip", 1001L, "alice").getCheckBook().getInviteToken();
+        fixture.checkCommandService.joinCheckByInviteToken(inviteToken, 1002L, "bob");
+        fixture.checkCommandService.addGuestParticipantByInviteToken(inviteToken, 1002L, "bob", "Charlie");
+
+        fixture.service.handleUpdate(update(104L, 1002L, "bob", "/add_expense " + inviteToken + " 1500 me | Dinner"));
+        Expense expense = fixture.expenseRepository.expenses.values().iterator().next();
+
+        TelegramWebhookResult result = fixture.service.handleUpdate(
+                editedUpdate(104L, 1002L, "bob", 1L, "/add_expense " + inviteToken + " 2200 me,Charlie | Edited dinner")
+        );
+
+        Expense updatedExpense = fixture.expenseRepository.findById(expense.getId()).get();
+        Assertions.assertEquals(1, result.getOutgoingMessages().size());
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("синхронизирован"));
+        Assertions.assertEquals(2200L, updatedExpense.getAmountMinor());
+        Assertions.assertEquals("Edited dinner", updatedExpense.getComment());
+        Assertions.assertEquals("/add_expense " + inviteToken + " 2200 me,Charlie | Edited dinner", updatedExpense.getSourceMessageText());
+        Assertions.assertEquals(2, fixture.expenseShareRepository.findByExpenseId(expense.getId()).size());
+    }
+
+    @Test
     void deleteExpenseCommandRemovesOwnExpense() {
         Fixture fixture = new Fixture();
         String inviteToken = fixture.checkCommandService.createCheck("Trip", 1001L, "alice").getCheckBook().getInviteToken();
@@ -187,6 +210,10 @@ class TelegramCommandServiceTest {
     }
 
     private TelegramUpdate update(Long chatId, Long userId, String username, String text) {
+        return update(chatId, userId, username, 1L, text);
+    }
+
+    private TelegramUpdate update(Long chatId, Long userId, String username, Long messageId, String text) {
         TelegramUser user = new TelegramUser();
         user.setId(userId);
         user.setUsername(username);
@@ -197,7 +224,7 @@ class TelegramCommandServiceTest {
         chat.setType("private");
 
         TelegramMessage message = new TelegramMessage();
-        message.setMessageId(1L);
+        message.setMessageId(messageId);
         message.setChat(chat);
         message.setFrom(user);
         message.setText(text);
@@ -205,6 +232,13 @@ class TelegramCommandServiceTest {
         TelegramUpdate update = new TelegramUpdate();
         update.setUpdateId(1L);
         update.setMessage(message);
+        return update;
+    }
+
+    private TelegramUpdate editedUpdate(Long chatId, Long userId, String username, Long messageId, String text) {
+        TelegramUpdate update = update(chatId, userId, username, messageId, text);
+        update.setEditedMessage(update.getMessage());
+        update.setMessage(null);
         return update;
     }
 
@@ -398,6 +432,19 @@ class TelegramCommandServiceTest {
         @Override
         public Optional<Expense> findById(UUID expenseId) {
             return Optional.ofNullable(expenses.get(expenseId));
+        }
+
+        @Override
+        public Optional<Expense> findByTelegramMessage(long telegramChatId, long telegramMessageId) {
+            for (Expense expense : expenses.values()) {
+                if (expense.getTelegramChatId() != null
+                        && expense.getTelegramMessageId() != null
+                        && expense.getTelegramChatId().longValue() == telegramChatId
+                        && expense.getTelegramMessageId().longValue() == telegramMessageId) {
+                    return Optional.of(expense);
+                }
+            }
+            return Optional.empty();
         }
 
         @Override

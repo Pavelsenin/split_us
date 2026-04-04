@@ -426,6 +426,19 @@ class CheckCommandServiceTest {
         }
 
         @Override
+        public Optional<Expense> findByTelegramMessage(long telegramChatId, long telegramMessageId) {
+            for (Expense expense : expenses.values()) {
+                if (expense.getTelegramChatId() != null
+                        && expense.getTelegramMessageId() != null
+                        && expense.getTelegramChatId().longValue() == telegramChatId
+                        && expense.getTelegramMessageId().longValue() == telegramMessageId) {
+                    return Optional.of(expense);
+                }
+            }
+            return Optional.empty();
+        }
+
+        @Override
         public List<Expense> findByCheckId(UUID checkId) {
             List<Expense> result = new ArrayList<Expense>();
             for (Expense expense : expenses.values()) {
