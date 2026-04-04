@@ -16,6 +16,7 @@ import ru.splitus.error.ApiErrorCode;
 import ru.splitus.error.ApiException;
 import ru.splitus.expense.ExpenseCommandService;
 import ru.splitus.expense.ExpenseDetails;
+import ru.splitus.expense.ExpenseStatus;
 
 @Service
 public class TelegramCommandService {
@@ -47,25 +48,29 @@ public class TelegramCommandService {
     }
 
     private TelegramWebhookResult handleEditedMessage(TelegramMessage message) {
-        if (message.getChat() == null || message.getText() == null || message.getText().trim().isEmpty()) {
+        if (message.getChat() == null) {
+            return emptyResult();
+        }
+
+        Optional<ExpenseDetails> existingExpense = findExpenseByTelegramMessage(message);
+        if (!existingExpense.isPresent()) {
             return emptyResult();
         }
 
         try {
+            if (message.getText() == null || message.getText().trim().isEmpty()) {
+                return markExpenseRequiresClarification(message, existingExpense.get());
+            }
             ParsedCommand command = parseCommand(message.getText().trim());
             if (command == null || command.ignored) {
-                return emptyResult();
+                return markExpenseRequiresClarification(message, existingExpense.get());
             }
             if (!"add_expense".equals(command.name)) {
-                return emptyResult();
-            }
-
-            Optional<ExpenseDetails> existingExpense = findExpenseByTelegramMessage(message);
-            if (!existingExpense.isPresent()) {
-                return emptyResult();
+                return markExpenseRequiresClarification(message, existingExpense.get());
             }
             return synchronizeExpenseFromEditedAddCommand(message, command.arguments, existingExpense.get());
         } catch (ApiException exception) {
+            markExpenseRequiresClarification(message, existingExpense.get());
             return reply(message.getChat().getId(), exception.getMessage());
         }
     }
@@ -281,6 +286,28 @@ public class TelegramCommandService {
         return reply(
                 message.getChat().getId(),
                 "Расход " + updatedExpense.getExpense().getId() + " синхронизирован после редактирования сообщения."
+        );
+    }
+
+    private TelegramWebhookResult markExpenseRequiresClarification(TelegramMessage message, ExpenseDetails existingExpense) {
+        TelegramUser from = requiredUser(message);
+        Participant actorParticipant = checkCommandService.requireRegisteredParticipant(
+                existingExpense.getExpense().getCheckId(),
+                from.getId().longValue(),
+                from.getUsername()
+        );
+        ExpenseDetails updatedExpense = expenseCommandService.updateExpense(
+                existingExpense.getExpense().getId(),
+                null,
+                null,
+                message.getText(),
+                null,
+                ExpenseStatus.REQUIRES_CLARIFICATION,
+                actorParticipant.getId()
+        );
+        return reply(
+                message.getChat().getId(),
+                "Расход " + updatedExpense.getExpense().getId() + " требует уточнения после редактирования сообщения."
         );
     }
 
