@@ -1,0 +1,30 @@
+server:
+  port: ${APP_PORT:8080}
+
+spring:
+  application:
+    name: split-us-backend
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:splitus}
+    username: ${DB_USER:splitus}
+    password: ${DB_PASSWORD:splitus}
+  thymeleaf:
+    cache: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+splitus:
+  telegram:
+    webhook:
+      path-alias: ${TELEGRAM_WEBHOOK_ALIAS:local-bot}
+      secret-token: ${TELEGRAM_WEBHOOK_SECRET:change-me}
+  security:
+    service-token: ${INTERNAL_SERVICE_TOKEN:change-me-too}
+

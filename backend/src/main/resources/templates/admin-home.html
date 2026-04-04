@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">Split Us Admin</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", sans-serif;
+            background: linear-gradient(135deg, #f5f1e8, #dfe8f1);
+            color: #1f2933;
+        }
+        main {
+            max-width: 920px;
+            margin: 48px auto;
+            padding: 32px;
+            background: rgba(255, 255, 255, 0.82);
+            border-radius: 20px;
+            box-shadow: 0 18px 48px rgba(31, 41, 51, 0.12);
+        }
+        .pill {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: #164e63;
+            color: #fff;
+            font-size: 14px;
+        }
+        h1 {
+            margin-top: 16px;
+            margin-bottom: 8px;
+            font-size: 36px;
+        }
+        p {
+            line-height: 1.6;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+        .card {
+            padding: 18px;
+            border-radius: 16px;
+            background: #fff;
+            border: 1px solid rgba(22, 78, 99, 0.12);
+        }
+    </style>
+</head>
+<body>
+<main>
+    <span class="pill">Admin MVP Stub</span>
+    <h1>Separate admin surface is wired</h1>
+    <p>
+        Эта страница подтверждает базовый этап 1: у проекта уже есть отдельный web-интерфейс для администрирования.
+        На следующем шаге сюда добавляются аутентификация, поиск чеков и read-only просмотр.
+    </p>
+    <div class="grid">
+        <section class="card">
+            <h2>Environment</h2>
+            <p th:text="${environmentName}">local</p>
+        </section>
+        <section class="card">
+            <h2>Auth mode</h2>
+            <p th:text="${authMode}">stub</p>
+        </section>
+    </div>
+</main>
+</body>
+</html>
+
