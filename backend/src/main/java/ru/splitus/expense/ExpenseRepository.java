@@ -12,8 +12,9 @@ public interface ExpenseRepository {
 
     Optional<Expense> findById(UUID expenseId);
 
+    Optional<Expense> findByTelegramMessage(long telegramChatId, long telegramMessageId);
+
     List<Expense> findByCheckId(UUID checkId);
 
     void deleteById(UUID expenseId);
 }
-

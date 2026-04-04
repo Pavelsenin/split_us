@@ -62,6 +62,19 @@ public class JdbcExpenseRepository implements ExpenseRepository {
     }
 
     @Override
+    public Optional<Expense> findByTelegramMessage(long telegramChatId, long telegramMessageId) {
+        return jdbcTemplate.query(
+                "select id, check_id, amount_minor, currency_code, payer_participant_id, comment, source_message_text, "
+                        + "telegram_chat_id, telegram_message_id, status, created_by_participant_id, updated_by_participant_id, created_at, updated_at "
+                        + "from expense where telegram_chat_id = :telegramChatId and telegram_message_id = :telegramMessageId",
+                new MapSqlParameterSource()
+                        .addValue("telegramChatId", Long.valueOf(telegramChatId))
+                        .addValue("telegramMessageId", Long.valueOf(telegramMessageId)),
+                EXPENSE_ROW_MAPPER
+        ).stream().findFirst();
+    }
+
+    @Override
     public List<Expense> findByCheckId(UUID checkId) {
         return jdbcTemplate.query(
                 "select id, check_id, amount_minor, currency_code, payer_participant_id, comment, source_message_text, "
@@ -119,4 +132,3 @@ public class JdbcExpenseRepository implements ExpenseRepository {
         }
     };
 }
-

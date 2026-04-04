@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -130,6 +131,15 @@ public class ExpenseCommandService {
     public ExpenseDetails getExpense(UUID expenseId) {
         Expense expense = loadExpense(expenseId);
         return new ExpenseDetails(expense, expenseShareRepository.findByExpenseId(expenseId));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<ExpenseDetails> findExpenseByTelegramMessage(long telegramChatId, long telegramMessageId) {
+        Optional<Expense> expense = expenseRepository.findByTelegramMessage(telegramChatId, telegramMessageId);
+        if (!expense.isPresent()) {
+            return Optional.empty();
+        }
+        return Optional.of(new ExpenseDetails(expense.get(), expenseShareRepository.findByExpenseId(expense.get().getId())));
     }
 
     @Transactional(readOnly = true)
