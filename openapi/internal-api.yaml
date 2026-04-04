@@ -105,6 +105,10 @@ paths:
       responses:
         '200':
           description: Merge completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantResponse'
   /api/internal/checks/{checkId}/expenses:
     post:
       tags: [Expenses]
@@ -283,6 +287,25 @@ components:
         performedByParticipantId:
           type: string
           format: uuid
+    ParticipantResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        displayName:
+          type: string
+        linkedUserId:
+          type: string
+          format: uuid
+        mergedIntoParticipantId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
     CreateExpenseRequest:
       type: object
       required: [payerParticipantId, amountMinor, splitParticipantIds, createdByParticipantId]
