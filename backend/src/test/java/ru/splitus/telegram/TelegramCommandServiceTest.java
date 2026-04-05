@@ -26,6 +26,8 @@ import ru.splitus.expense.ExpenseRepository;
 import ru.splitus.expense.ExpenseShare;
 import ru.splitus.expense.ExpenseShareRepository;
 import ru.splitus.expense.ExpenseStatus;
+import ru.splitus.settlement.ExactSettlementSpikeSolver;
+import ru.splitus.settlement.SettlementQueryService;
 
 class TelegramCommandServiceTest {
 
@@ -207,6 +209,24 @@ class TelegramCommandServiceTest {
     }
 
     @Test
+    void settleCommandBuildsTransferPlanFromValidExpenses() {
+        Fixture fixture = new Fixture();
+        String inviteToken = fixture.checkCommandService.createCheck("Trip", 1001L, "alice").getCheckBook().getInviteToken();
+        fixture.checkCommandService.joinCheckByInviteToken(inviteToken, 1002L, "bob");
+        fixture.checkCommandService.addGuestParticipantByInviteToken(inviteToken, 1002L, "bob", "Charlie");
+
+        fixture.service.handleUpdate(update(104L, 1002L, "bob", "/add_expense " + inviteToken + " 1500 me,Charlie | Dinner"));
+
+        TelegramWebhookResult result = fixture.service.handleUpdate(
+                update(104L, 1002L, "bob", "/settle " + inviteToken)
+        );
+
+        Assertions.assertEquals(1, result.getOutgoingMessages().size());
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("Текущие балансы"));
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("Charlie -> bob: 750"));
+    }
+
+    @Test
     void addExpenseCommandRejectsUnknownParticipant() {
         Fixture fixture = new Fixture();
         String inviteToken = fixture.checkCommandService.createCheck("Trip", 1001L, "alice").getCheckBook().getInviteToken();
@@ -283,12 +303,19 @@ class TelegramCommandServiceTest {
                 expenseRepository,
                 expenseShareRepository
         );
+        private final SettlementQueryService settlementQueryService = new SettlementQueryService(
+                checkBookRepository,
+                participantRepository,
+                expenseRepository,
+                expenseShareRepository,
+                new ExactSettlementSpikeSolver()
+        );
         private final TelegramCommandService service;
 
         private Fixture() {
             TelegramWebhookProperties properties = new TelegramWebhookProperties();
             properties.setBotUsername("splitus_bot");
-            this.service = new TelegramCommandService(checkCommandService, expenseCommandService, properties);
+            this.service = new TelegramCommandService(checkCommandService, expenseCommandService, settlementQueryService, properties);
         }
     }
 
