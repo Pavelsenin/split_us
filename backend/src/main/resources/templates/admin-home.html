@@ -28,6 +28,11 @@
             gap: 16px;
             flex-wrap: wrap;
         }
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
         .pill {
             display: inline-block;
             padding: 8px 14px;
@@ -44,7 +49,7 @@
         p {
             line-height: 1.6;
         }
-        form {
+        form.search {
             margin-top: 24px;
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
@@ -115,8 +120,30 @@
             background: rgba(241, 245, 249, 0.8);
             color: #475569;
         }
+        .flash {
+            margin-top: 20px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            font-size: 14px;
+        }
+        .flash.ok {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .flash.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .logout-form {
+            margin: 0;
+            display: block;
+        }
+        .logout-form button {
+            margin-top: 0;
+            background: #1e293b;
+        }
         @media (max-width: 720px) {
-            form {
+            form.search {
                 grid-template-columns: 1fr;
             }
             table, thead, tbody, tr, th, td {
@@ -145,15 +172,27 @@
 <main>
     <div class="topbar">
         <div>
-            <span class="pill">Admin Read-Only</span>
+            <span class="pill">Admin Panel</span>
             <h1>Проверка чеков и их состояния</h1>
             <p>
                 Этот экран уже полезен для поддержки: можно найти чек, открыть его состав,
-                посмотреть merge history, расходы, исходные тексты Telegram-сообщений и текущий settlement snapshot.
+                посмотреть merge history, расходы, исходные тексты Telegram-сообщений, текущий settlement snapshot
+                и при необходимости перейти к подтверждённому удалению чека.
             </p>
         </div>
+        <div class="actions">
+            <div class="muted" th:if="${currentAdminLogin != null}">
+                admin: <strong th:text="${currentAdminLogin}">admin</strong>
+            </div>
+            <form class="logout-form" method="post" action="/admin/logout">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit">Выйти</button>
+            </form>
+        </div>
     </div>
-    <form method="get" action="/admin">
+    <div class="flash ok" th:if="${successMessage != null}" th:text="${successMessage}">success</div>
+    <div class="flash error" th:if="${errorMessage != null}" th:text="${errorMessage}">error</div>
+    <form class="search" method="get" action="/admin">
         <input type="text" name="q" th:value="${query}"
                placeholder="Поиск по title, invite token, check id, username или telegram chat id">
         <button type="submit">Найти</button>
@@ -165,7 +204,7 @@
         </section>
         <section class="card">
             <h2>Auth mode</h2>
-            <p th:text="${authMode}">disabled</p>
+            <p th:text="${authMode}">spring-security</p>
         </section>
         <section class="card">
             <h2>Result window</h2>

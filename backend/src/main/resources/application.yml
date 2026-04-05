@@ -23,6 +23,9 @@ management:
 splitus:
   admin:
     environment-name: ${ADMIN_ENVIRONMENT_NAME:local}
+    bootstrap-login: ${ADMIN_BOOTSTRAP_LOGIN:}
+    bootstrap-password: ${ADMIN_BOOTSTRAP_PASSWORD:}
+    bootstrap-password-hash: ${ADMIN_BOOTSTRAP_PASSWORD_HASH:}
   telegram:
     webhook:
       path-alias: ${TELEGRAM_WEBHOOK_ALIAS:local-bot}

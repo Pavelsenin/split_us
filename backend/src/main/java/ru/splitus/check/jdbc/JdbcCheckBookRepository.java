@@ -88,6 +88,17 @@ public class JdbcCheckBookRepository implements CheckBookRepository {
         return count == null ? 0 : count.intValue();
     }
 
+    /**
+     * Deletes a check by id.
+     */
+    @Override
+    public boolean deleteById(UUID checkId) {
+        return jdbcTemplate.update(
+                "delete from check_book where id = :id",
+                new MapSqlParameterSource("id", checkId)
+        ) > 0;
+    }
+
     private static final RowMapper<CheckBook> CHECK_ROW_MAPPER = new RowMapper<CheckBook>() {
         @Override
         public CheckBook mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -105,6 +116,5 @@ public class JdbcCheckBookRepository implements CheckBookRepository {
         }
     };
 }
-
 
 

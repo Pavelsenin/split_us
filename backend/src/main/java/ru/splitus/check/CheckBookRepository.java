@@ -28,7 +28,13 @@ public interface CheckBookRepository {
      * Counts created by owner since.
      */
     int countCreatedByOwnerSince(UUID ownerUserId, OffsetDateTime since);
-}
 
+    /**
+     * Deletes a check by id.
+     */
+    default boolean deleteById(UUID checkId) {
+        throw new UnsupportedOperationException("Delete is not supported");
+    }
+}
 
 

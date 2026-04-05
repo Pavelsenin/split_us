@@ -24,6 +24,13 @@
             background: rgba(255, 255, 255, 0.86);
             box-shadow: 0 18px 48px rgba(31, 41, 51, 0.1);
         }
+        .hero-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
         .pill {
             display: inline-block;
             padding: 8px 14px;
@@ -101,6 +108,44 @@
         .actions {
             margin-top: 14px;
         }
+        .logout-form {
+            margin: 0;
+        }
+        .logout-form button, .danger button {
+            padding: 12px 16px;
+            border: 0;
+            border-radius: 12px;
+            color: #fff;
+            cursor: pointer;
+        }
+        .logout-form button {
+            background: #1e293b;
+        }
+        .danger {
+            margin-top: 12px;
+        }
+        .danger button {
+            width: 100%;
+            background: #b91c1c;
+        }
+        .danger input {
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px 14px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            border-radius: 12px;
+            box-sizing: border-box;
+        }
+        .flash {
+            margin-top: 16px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            font-size: 14px;
+        }
+        .flash.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
         @media (max-width: 720px) {
             main {
                 padding: 16px;
@@ -123,12 +168,26 @@
 <body>
 <main>
     <section class="hero">
-        <span class="pill" th:text="${environmentName}">local</span>
-        <h1 th:text="${details.summary.title}">Trip</h1>
-        <p class="muted" th:text="${details.summary.checkId}">check-id</p>
+        <div class="hero-top">
+            <div>
+                <span class="pill" th:text="${environmentName}">local</span>
+                <h1 th:text="${details.summary.title}">Trip</h1>
+                <p class="muted" th:text="${details.summary.checkId}">check-id</p>
+            </div>
+            <div>
+                <div class="muted" th:if="${currentAdminLogin != null}">
+                    admin: <strong th:text="${currentAdminLogin}">admin</strong>
+                </div>
+                <form class="logout-form" method="post" action="/admin/logout">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button type="submit">Выйти</button>
+                </form>
+            </div>
+        </div>
         <div class="actions">
             <a href="/admin">← Назад к поиску</a>
         </div>
+        <div class="flash error" th:if="${errorMessage != null}" th:text="${errorMessage}">error</div>
         <div class="meta">
             <div class="card">
                 <h3>Owner</h3>
@@ -151,6 +210,18 @@
                 <div>Participants: <span th:text="${details.summary.activeParticipantCount}">0</span></div>
                 <div>Expenses: <span th:text="${details.summary.expenseCount}">0</span></div>
                 <div>Merges: <span th:text="${details.merges.size()}">0</span></div>
+            </div>
+            <div class="card">
+                <h3>Danger Zone</h3>
+                <p class="muted">
+                    Для удаления введи точное название чека:
+                    <strong th:text="${details.summary.title}">Trip</strong>
+                </p>
+                <form class="danger" method="post" th:action="@{/admin/checks/{checkId}/delete(checkId=${details.summary.checkId})}">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="text" name="confirmationTitle" placeholder="Точное название чека" autocomplete="off">
+                    <button type="submit">Удалить чек</button>
+                </form>
             </div>
         </div>
     </section>
