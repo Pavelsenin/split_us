@@ -365,7 +365,7 @@ public class TelegramCommandService {
                 parsed.comment,
                 message.getText(),
                 extractParticipantIds(splitParticipants),
-                null,
+                ExpenseStatus.VALID,
                 actorParticipant.getId()
         );
         return reply(
