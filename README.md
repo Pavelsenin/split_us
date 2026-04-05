@@ -1,21 +1,75 @@
 # Split Us
 
-Репозиторий MVP-системы для ведения общего чека в Telegram и расчета взаиморасчетов.
+MVP-система для ведения общего чека в Telegram и расчёта взаиморасчётов с минимальным числом переводов.
 
-## Структура
+## Что В Репозитории
 
-- `backend/` — Java backend, Telegram webhook, внутренний API и server-rendered админ-интерфейс.
-- `docs/architecture/` — архитектурный baseline, схема хранения, Telegram-сценарии и spike по алгоритму расчета.
-- `openapi/` — draft внутреннего OpenAPI-контракта.
-- `docker-compose.yml` — локальное dev-окружение для PostgreSQL и Grafana.
+- `backend/` — Spring Boot backend, Telegram webhook, internal API и server-rendered admin
+- `openapi/` — draft internal OpenAPI-контракта
+- `infra/` — deployable stack для Prometheus, Grafana и reverse proxy
+- `scripts/` — backup, restore и verification restore
+- `docs/` — архитектура, user guides, operations и release-checklist
 
-## Быстрый старт
+## Текущее Состояние MVP
 
-1. Скопировать `.env.example` в `.env` и при необходимости скорректировать значения.
-2. Поднять инфраструктуру: `docker compose up -d`.
-3. Запустить backend: `mvn -f backend/pom.xml spring-boot:run`.
+Сейчас в репозитории уже есть:
 
-## Статус
+- Telegram-flow для `new_check`, `start`, `add_guest`, `add_expense`, `list_expenses`, `update_expense`, `delete_expense`, `settle`
+- internal API с service-token защитой
+- exact settlement с guard-ами от параллельного запуска и изменения данных во время расчёта
+- admin-панель с login, read-only просмотром и удалением чека
+- observability, Prometheus endpoint, Grafana dashboard provisioning и alert rules
+- backup/restore scripts и runbook
+- unit, scenario и web-acceptance tests
 
-Сделан стартовый baseline по этапам 0-1 плана: архитектурные решения, каркас backend, baseline-миграция, draft OpenAPI и spike точного расчета.
+## Быстрый Старт
 
+1. Скопировать `.env.example` в `.env`.
+2. Заполнить минимум:
+   - `POSTGRES_*`
+   - `TELEGRAM_WEBHOOK_SECRET`
+   - `TELEGRAM_BOT_USERNAME`
+   - `INTERNAL_SERVICE_TOKEN`
+   - `ADMIN_BOOTSTRAP_LOGIN`
+   - один из `ADMIN_BOOTSTRAP_PASSWORD` или `ADMIN_BOOTSTRAP_PASSWORD_HASH`
+3. Для production-like запуска указать:
+   - `APP_DOMAIN`
+   - `GRAFANA_DOMAIN`
+   - `ACME_EMAIL`
+4. Поднять стек:
+
+```bash
+docker compose up -d --build
+```
+
+5. Для локального backend-only прогона можно использовать:
+
+```bash
+mvn -f backend/pom.xml test
+mvn -f backend/pom.xml spring-boot:run
+```
+
+## Основные Точки Входа
+
+- backend через reverse proxy: `https://APP_DOMAIN/`
+- admin: `https://APP_DOMAIN/admin`
+- Grafana: `https://GRAFANA_DOMAIN/`
+- Prometheus scrape endpoint внутри приложения: `/actuator/prometheus`
+
+## Документация
+
+- архитектура: `docs/architecture/`
+- пользовательские инструкции: `docs/user/`
+- operations: `docs/operations/`
+- приёмка релиза: `docs/release/acceptance-checklist.md`
+- обзор всех документов: `docs/index.md`
+
+## Проверка Качества
+
+Основной локальный прогон:
+
+```bash
+mvn -f backend/pom.xml test
+```
+
+На текущем состоянии репозитория тестовый набор включает unit, scenario и web-acceptance coverage.
