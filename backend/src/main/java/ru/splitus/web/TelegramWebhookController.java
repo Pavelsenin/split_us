@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.splitus.config.TelegramWebhookProperties;
 import ru.splitus.telegram.TelegramCommandService;
+import ru.splitus.telegram.TelegramMessageSender;
 import ru.splitus.telegram.TelegramUpdate;
 import ru.splitus.telegram.TelegramWebhookResult;
 
@@ -24,13 +25,18 @@ public class TelegramWebhookController {
 
     private final TelegramWebhookProperties properties;
     private final TelegramCommandService telegramCommandService;
+    private final TelegramMessageSender telegramMessageSender;
 
     /**
      * Creates a new telegram webhook controller instance.
      */
-    public TelegramWebhookController(TelegramWebhookProperties properties, TelegramCommandService telegramCommandService) {
+    public TelegramWebhookController(
+            TelegramWebhookProperties properties,
+            TelegramCommandService telegramCommandService,
+            TelegramMessageSender telegramMessageSender) {
         this.properties = properties;
         this.telegramCommandService = telegramCommandService;
+        this.telegramMessageSender = telegramMessageSender;
     }
 
     /**
@@ -51,9 +57,11 @@ public class TelegramWebhookController {
         }
 
         TelegramWebhookResult result = telegramCommandService.handleUpdate(updateBody);
+        telegramMessageSender.sendMessages(result.getOutgoingMessages());
         Map<String, Object> payload = new LinkedHashMap<String, Object>();
         payload.put("accepted", Boolean.valueOf(result.isAccepted()));
         payload.put("payloadPresent", Boolean.valueOf(updateBody != null));
+        payload.put("dispatchedMessages", Integer.valueOf(result.getOutgoingMessages().size()));
         payload.put("outgoingMessages", result.getOutgoingMessages());
         return ResponseEntity.accepted().body(payload);
     }
@@ -65,6 +73,5 @@ public class TelegramWebhookController {
         return ResponseEntity.status(status).body(payload);
     }
 }
-
 
 

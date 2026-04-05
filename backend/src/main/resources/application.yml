@@ -31,5 +31,6 @@ splitus:
       path-alias: ${TELEGRAM_WEBHOOK_ALIAS:local-bot}
       secret-token: ${TELEGRAM_WEBHOOK_SECRET:change-me}
       bot-username: ${TELEGRAM_BOT_USERNAME:splitus_bot}
+      bot-token: ${TELEGRAM_BOT_TOKEN:}
   security:
     service-token: ${INTERNAL_SERVICE_TOKEN:change-me-too}
