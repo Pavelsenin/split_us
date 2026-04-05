@@ -20,6 +20,12 @@ import ru.splitus.expense.ExpenseShare;
 import ru.splitus.expense.ExpenseShareRepository;
 import ru.splitus.expense.ExpenseStatus;
 
+/**
+ * Read-only settlement data service.
+ *
+ * <p>This service aggregates valid expenses into participant balances and can
+ * either return a full immutable snapshot or calculate a plan directly from it.
+ */
 @Service
 public class SettlementQueryService {
 
@@ -42,15 +48,34 @@ public class SettlementQueryService {
         this.exactSettlementSpikeSolver = exactSettlementSpikeSolver;
     }
 
+    /**
+     * Calculates settlement directly from the current persisted state.
+     *
+     * @param checkId target check identifier
+     * @return balances and exact transfer plan
+     */
     @Transactional(readOnly = true)
     public SettlementResult calculate(UUID checkId) {
         return calculate(loadSnapshot(checkId));
     }
 
+    /**
+     * Calculates settlement from a previously captured immutable snapshot.
+     *
+     * @param snapshot precomputed settlement snapshot
+     * @return balances and exact transfer plan
+     */
     public SettlementResult calculate(SettlementSnapshot snapshot) {
         return new SettlementResult(snapshot.getBalances(), exactSettlementSpikeSolver.solve(snapshot.getBalanceMap()));
     }
 
+    /**
+     * Captures a deterministic snapshot of all active participants and valid expenses
+     * relevant for settlement calculation.
+     *
+     * @param checkId target check identifier
+     * @return snapshot including balances and a fingerprint for change detection
+     */
     @Transactional(readOnly = true)
     public SettlementSnapshot loadSnapshot(UUID checkId) {
         if (!checkBookRepository.findById(checkId).isPresent()) {

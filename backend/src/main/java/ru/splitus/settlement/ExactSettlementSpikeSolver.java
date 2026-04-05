@@ -8,9 +8,21 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
+/**
+ * Exact solver for the MVP settlement plan.
+ *
+ * <p>The solver searches over debtor/creditor pairings and returns a deterministic
+ * plan with the minimum number of transfers for the provided participant balances.
+ */
 @Component
 public class ExactSettlementSpikeSolver {
 
+    /**
+     * Builds an exact transfer plan for the provided zero-sum balance map.
+     *
+     * @param participantBalances map of participant display name to signed balance in minor units
+     * @return minimal deterministic settlement plan
+     */
     public SettlementPlan solve(Map<String, Long> participantBalances) {
         validateBalances(participantBalances);
 
@@ -149,6 +161,12 @@ public class ExactSettlementSpikeSolver {
         }
     }
 
+    /**
+     * Convenience factory used in tests and benchmarks to build balance maps inline.
+     *
+     * @param values alternating participant name and balance value pairs
+     * @return linked balance map preserving the provided order
+     */
     public static Map<String, Long> balancesOf(Object... values) {
         if (values.length % 2 != 0) {
             throw new IllegalArgumentException("Expected pairs of participant and balance");

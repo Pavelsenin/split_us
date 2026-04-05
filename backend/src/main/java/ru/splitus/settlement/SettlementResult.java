@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Final settlement payload combining participant balances and transfer plan.
+ */
 public class SettlementResult {
 
     private final List<SettlementBalance> balances;
@@ -14,10 +17,16 @@ public class SettlementResult {
         this.plan = plan;
     }
 
+    /**
+     * @return immutable list of participant balances used to build the plan
+     */
     public List<SettlementBalance> getBalances() {
         return balances;
     }
 
+    /**
+     * @return exact transfer plan derived from the balances
+     */
     public SettlementPlan getPlan() {
         return plan;
     }

@@ -8,6 +8,13 @@ import org.springframework.stereotype.Service;
 import ru.splitus.error.ApiErrorCode;
 import ru.splitus.error.ApiException;
 
+/**
+ * Orchestrates settlement execution with basic runtime safety guarantees.
+ *
+ * <p>The service prevents parallel calculations for the same check and verifies
+ * that the underlying data fingerprint has not changed between snapshot capture
+ * and plan publication.
+ */
 @Service
 public class SettlementExecutionService {
 
@@ -18,6 +25,14 @@ public class SettlementExecutionService {
         this.settlementQueryService = settlementQueryService;
     }
 
+    /**
+     * Executes a stable settlement calculation for the given check.
+     *
+     * @param checkId target check identifier
+     * @return settlement balances and transfer plan
+     * @throws ApiException with {@code SETTLEMENT_ALREADY_RUNNING} when another calculation is in progress
+     * @throws ApiException with {@code SETTLEMENT_STATE_CHANGED} when data changed during the calculation
+     */
     public SettlementResult calculateStable(UUID checkId) {
         ReentrantLock lock = checkLocks.computeIfAbsent(checkId, id -> new ReentrantLock());
         if (!lock.tryLock()) {

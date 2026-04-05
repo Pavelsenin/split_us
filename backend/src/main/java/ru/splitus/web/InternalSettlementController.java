@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.splitus.settlement.SettlementExecutionService;
 import ru.splitus.web.dto.SettlementResponse;
 
+/**
+ * Internal endpoint for executing settlement calculation for a specific check.
+ */
 @RestController
 @RequestMapping("/api/internal/checks")
 public class InternalSettlementController {
@@ -18,6 +21,12 @@ public class InternalSettlementController {
         this.settlementExecutionService = settlementExecutionService;
     }
 
+    /**
+     * Calculates the current settlement plan for the provided check.
+     *
+     * @param checkId target check identifier
+     * @return settlement balances and transfer plan
+     */
     @PostMapping("/{checkId}/settlement")
     public SettlementResponse calculateSettlement(@PathVariable UUID checkId) {
         return SettlementResponse.fromDomain(settlementExecutionService.calculateStable(checkId));
