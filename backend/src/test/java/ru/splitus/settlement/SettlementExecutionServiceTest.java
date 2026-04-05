@@ -1,4 +1,4 @@
-package ru.splitus.web;
+package ru.splitus.settlement;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import ru.splitus.check.CheckBook;
@@ -15,31 +18,53 @@ import ru.splitus.check.CheckBookRepository;
 import ru.splitus.check.Participant;
 import ru.splitus.check.ParticipantRepository;
 import ru.splitus.check.ParticipantType;
+import ru.splitus.error.ApiErrorCode;
+import ru.splitus.error.ApiException;
 import ru.splitus.expense.Expense;
 import ru.splitus.expense.ExpenseRepository;
 import ru.splitus.expense.ExpenseShare;
 import ru.splitus.expense.ExpenseShareRepository;
 import ru.splitus.expense.ExpenseStatus;
-import ru.splitus.settlement.SettlementExecutionService;
-import ru.splitus.settlement.ExactSettlementSpikeSolver;
-import ru.splitus.settlement.SettlementQueryService;
-import ru.splitus.web.dto.SettlementResponse;
 
-class InternalSettlementControllerTest {
+class SettlementExecutionServiceTest {
 
     @Test
-    void returnsBalancesAndTransfersForCheckSettlement() {
-        Fixture fixture = new Fixture();
+    void detectsStateChangeDuringCalculation() {
+        Fixture fixture = new Fixture(new MutatingSolver());
 
-        SettlementResponse response = fixture.controller.calculateSettlement(fixture.checkId);
+        ApiException exception = Assertions.assertThrows(ApiException.class, () ->
+                fixture.executionService.calculateStable(fixture.checkId)
+        );
 
-        Assertions.assertEquals(2, response.getTransferCount());
-        Assertions.assertEquals(3, response.getBalances().size());
-        Assertions.assertEquals("alice", response.getBalances().get(0).getParticipant());
-        Assertions.assertEquals(600L, response.getBalances().get(0).getBalanceMinor());
-        Assertions.assertEquals("bob", response.getTransfers().get(0).getFromParticipant());
-        Assertions.assertEquals("alice", response.getTransfers().get(0).getToParticipant());
-        Assertions.assertEquals(300L, response.getTransfers().get(0).getAmountMinor());
+        Assertions.assertEquals(ApiErrorCode.SETTLEMENT_STATE_CHANGED, exception.getCode());
+    }
+
+    @Test
+    void rejectsParallelCalculationForSameCheck() throws Exception {
+        BlockingSolver solver = new BlockingSolver();
+        Fixture fixture = new Fixture(solver);
+        AtomicReference<Throwable> firstThreadFailure = new AtomicReference<Throwable>();
+
+        Thread first = new Thread(() -> {
+            try {
+                fixture.executionService.calculateStable(fixture.checkId);
+            } catch (Throwable throwable) {
+                firstThreadFailure.set(throwable);
+            }
+        });
+        first.start();
+
+        Assertions.assertTrue(solver.started.await(5, TimeUnit.SECONDS));
+
+        ApiException exception = Assertions.assertThrows(ApiException.class, () ->
+                fixture.executionService.calculateStable(fixture.checkId)
+        );
+
+        Assertions.assertEquals(ApiErrorCode.SETTLEMENT_ALREADY_RUNNING, exception.getCode());
+
+        solver.release.countDown();
+        first.join(5000L);
+        Assertions.assertNull(firstThreadFailure.get());
     }
 
     private static class Fixture {
@@ -47,33 +72,36 @@ class InternalSettlementControllerTest {
         private final InMemoryParticipantRepository participantRepository = new InMemoryParticipantRepository();
         private final InMemoryExpenseRepository expenseRepository = new InMemoryExpenseRepository();
         private final InMemoryExpenseShareRepository expenseShareRepository = new InMemoryExpenseShareRepository();
-        private final SettlementQueryService settlementQueryService = new SettlementQueryService(
-                checkRepository,
-                participantRepository,
-                expenseRepository,
-                expenseShareRepository,
-                new ExactSettlementSpikeSolver()
-        );
-        private final SettlementExecutionService settlementExecutionService = new SettlementExecutionService(settlementQueryService);
-        private final InternalSettlementController controller = new InternalSettlementController(settlementExecutionService);
+        private final SettlementQueryService queryService;
+        private final SettlementExecutionService executionService;
 
         private final UUID checkId = UUID.randomUUID();
         private final UUID aliceId = UUID.randomUUID();
         private final UUID bobId = UUID.randomUUID();
-        private final UUID carolId = UUID.randomUUID();
 
-        private Fixture() {
+        private Fixture(ExactSettlementSpikeSolver solver) {
+            if (solver instanceof MutatingSolver) {
+                ((MutatingSolver) solver).expenseRepository = expenseRepository;
+            }
+            this.queryService = new SettlementQueryService(
+                    checkRepository,
+                    participantRepository,
+                    expenseRepository,
+                    expenseShareRepository,
+                    solver
+            );
+            this.executionService = new SettlementExecutionService(queryService);
+
             OffsetDateTime now = OffsetDateTime.now();
             checkRepository.save(new CheckBook(checkId, "Trip", UUID.randomUUID(), "token", null, "RUB", true, now));
             participantRepository.save(new Participant(aliceId, checkId, ParticipantType.REGISTERED, "alice", UUID.randomUUID(), null, now.plusSeconds(1)));
             participantRepository.save(new Participant(bobId, checkId, ParticipantType.REGISTERED, "bob", UUID.randomUUID(), null, now.plusSeconds(2)));
-            participantRepository.save(new Participant(carolId, checkId, ParticipantType.GUEST, "carol", null, null, now.plusSeconds(3)));
 
             UUID expenseId = UUID.randomUUID();
             expenseRepository.save(new Expense(
                     expenseId,
                     checkId,
-                    900L,
+                    1000L,
                     "RUB",
                     aliceId,
                     "Dinner",
@@ -83,14 +111,58 @@ class InternalSettlementControllerTest {
                     ExpenseStatus.VALID,
                     aliceId,
                     aliceId,
-                    now.plusSeconds(4),
-                    now.plusSeconds(4)
+                    now.plusSeconds(3),
+                    now.plusSeconds(3)
             ));
             expenseShareRepository.saveAll(java.util.Arrays.asList(
-                    new ExpenseShare(expenseId, aliceId, 300L),
-                    new ExpenseShare(expenseId, bobId, 300L),
-                    new ExpenseShare(expenseId, carolId, 300L)
+                    new ExpenseShare(expenseId, aliceId, 500L),
+                    new ExpenseShare(expenseId, bobId, 500L)
             ));
+        }
+    }
+
+    private static class MutatingSolver extends ExactSettlementSpikeSolver {
+        private InMemoryExpenseRepository expenseRepository;
+
+        @Override
+        public SettlementPlan solve(Map<String, Long> participantBalances) {
+            if (expenseRepository != null) {
+                Expense expense = expenseRepository.expenses.values().iterator().next();
+                expenseRepository.update(new Expense(
+                        expense.getId(),
+                        expense.getCheckId(),
+                        expense.getAmountMinor(),
+                        expense.getCurrencyCode(),
+                        expense.getPayerParticipantId(),
+                        expense.getComment(),
+                        expense.getSourceMessageText(),
+                        expense.getTelegramChatId(),
+                        expense.getTelegramMessageId(),
+                        ExpenseStatus.INVALID,
+                        expense.getCreatedByParticipantId(),
+                        expense.getUpdatedByParticipantId(),
+                        expense.getCreatedAt(),
+                        OffsetDateTime.now()
+                ));
+            }
+            return super.solve(participantBalances);
+        }
+    }
+
+    private static class BlockingSolver extends ExactSettlementSpikeSolver {
+        private final CountDownLatch started = new CountDownLatch(1);
+        private final CountDownLatch release = new CountDownLatch(1);
+
+        @Override
+        public SettlementPlan solve(Map<String, Long> participantBalances) {
+            started.countDown();
+            try {
+                release.await(5, TimeUnit.SECONDS);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(exception);
+            }
+            return super.solve(participantBalances);
         }
     }
 
@@ -110,11 +182,6 @@ class InternalSettlementControllerTest {
 
         @Override
         public Optional<CheckBook> findByInviteToken(String inviteToken) {
-            for (CheckBook checkBook : checks.values()) {
-                if (inviteToken.equals(checkBook.getInviteToken())) {
-                    return Optional.of(checkBook);
-                }
-            }
             return Optional.empty();
         }
 
@@ -157,11 +224,6 @@ class InternalSettlementControllerTest {
 
         @Override
         public Optional<Participant> findById(UUID participantId) {
-            for (Participant participant : participants) {
-                if (participant.getId().equals(participantId)) {
-                    return Optional.of(participant);
-                }
-            }
             return Optional.empty();
         }
 

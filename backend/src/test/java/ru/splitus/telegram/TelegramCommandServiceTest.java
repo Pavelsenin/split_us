@@ -26,6 +26,7 @@ import ru.splitus.expense.ExpenseRepository;
 import ru.splitus.expense.ExpenseShare;
 import ru.splitus.expense.ExpenseShareRepository;
 import ru.splitus.expense.ExpenseStatus;
+import ru.splitus.settlement.SettlementExecutionService;
 import ru.splitus.settlement.ExactSettlementSpikeSolver;
 import ru.splitus.settlement.SettlementQueryService;
 
@@ -310,12 +311,13 @@ class TelegramCommandServiceTest {
                 expenseShareRepository,
                 new ExactSettlementSpikeSolver()
         );
+        private final SettlementExecutionService settlementExecutionService = new SettlementExecutionService(settlementQueryService);
         private final TelegramCommandService service;
 
         private Fixture() {
             TelegramWebhookProperties properties = new TelegramWebhookProperties();
             properties.setBotUsername("splitus_bot");
-            this.service = new TelegramCommandService(checkCommandService, expenseCommandService, settlementQueryService, properties);
+            this.service = new TelegramCommandService(checkCommandService, expenseCommandService, settlementExecutionService, properties);
         }
     }
 
