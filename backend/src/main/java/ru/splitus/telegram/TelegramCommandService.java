@@ -17,20 +17,27 @@ import ru.splitus.error.ApiException;
 import ru.splitus.expense.ExpenseCommandService;
 import ru.splitus.expense.ExpenseDetails;
 import ru.splitus.expense.ExpenseStatus;
+import ru.splitus.settlement.SettlementBalance;
+import ru.splitus.settlement.SettlementPlan;
+import ru.splitus.settlement.SettlementQueryService;
+import ru.splitus.settlement.SettlementResult;
 
 @Service
 public class TelegramCommandService {
 
     private final CheckCommandService checkCommandService;
     private final ExpenseCommandService expenseCommandService;
+    private final SettlementQueryService settlementQueryService;
     private final TelegramWebhookProperties telegramWebhookProperties;
 
     public TelegramCommandService(
             CheckCommandService checkCommandService,
             ExpenseCommandService expenseCommandService,
+            SettlementQueryService settlementQueryService,
             TelegramWebhookProperties telegramWebhookProperties) {
         this.checkCommandService = checkCommandService;
         this.expenseCommandService = expenseCommandService;
+        this.settlementQueryService = settlementQueryService;
         this.telegramWebhookProperties = telegramWebhookProperties;
     }
 
@@ -107,7 +114,10 @@ public class TelegramCommandService {
             if ("delete_expense".equals(command.name)) {
                 return handleDeleteExpense(message, command.arguments);
             }
-            return reply(message.getChat().getId(), "Команда не поддерживается. Сейчас доступны /new_check, /start join_<token>, /add_guest, /add_expense, /list_expenses, /update_expense и /delete_expense.");
+            if ("settle".equals(command.name)) {
+                return handleSettle(message, command.arguments);
+            }
+            return reply(message.getChat().getId(), "Команда не поддерживается. Сейчас доступны /new_check, /start join_<token>, /add_guest, /add_expense, /list_expenses, /update_expense, /delete_expense и /settle.");
         } catch (ApiException exception) {
             return reply(message.getChat().getId(), exception.getMessage());
         }
@@ -251,6 +261,18 @@ public class TelegramCommandService {
         );
         expenseCommandService.deleteExpense(expenseId, actorParticipant.getId());
         return reply(message.getChat().getId(), "Расход " + expenseId + " удален.");
+    }
+
+    private TelegramWebhookResult handleSettle(TelegramMessage message, String arguments) {
+        TelegramUser from = requiredUser(message);
+        String inviteToken = requireNonBlank(arguments, "Используйте /settle <invite_token>.");
+        Participant actorParticipant = checkCommandService.requireRegisteredParticipantByInviteToken(
+                inviteToken,
+                from.getId().longValue(),
+                from.getUsername()
+        );
+        SettlementResult settlementResult = settlementQueryService.calculate(actorParticipant.getCheckId());
+        return reply(message.getChat().getId(), formatSettlementResult(settlementResult));
     }
 
     private TelegramWebhookResult synchronizeExpenseFromEditedAddCommand(
@@ -470,6 +492,33 @@ public class TelegramCommandService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String formatSettlementResult(SettlementResult settlementResult) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Текущие балансы:");
+        for (SettlementBalance balance : settlementResult.getBalances()) {
+            builder.append("\n")
+                    .append(balance.getParticipant())
+                    .append(": ")
+                    .append(balance.getBalanceMinor());
+        }
+
+        if (settlementResult.getPlan().getTransfers().isEmpty()) {
+            builder.append("\nПереводы не нужны.");
+            return builder.toString();
+        }
+
+        builder.append("\nПлан переводов:");
+        for (SettlementPlan.Transfer transfer : settlementResult.getPlan().getTransfers()) {
+            builder.append("\n")
+                    .append(transfer.getFromParticipant())
+                    .append(" -> ")
+                    .append(transfer.getToParticipant())
+                    .append(": ")
+                    .append(transfer.getAmountMinor());
+        }
+        return builder.toString();
     }
 
     private String requireNonBlank(String value, String message) {
