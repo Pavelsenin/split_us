@@ -411,11 +411,24 @@ components:
         amountMinor:
           type: integer
           format: int64
+    SettlementBalance:
+      type: object
+      required: [participant, balanceMinor]
+      properties:
+        participant:
+          type: string
+        balanceMinor:
+          type: integer
+          format: int64
     SettlementResponse:
       type: object
       properties:
         transferCount:
           type: integer
+        balances:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettlementBalance'
         transfers:
           type: array
           items:
