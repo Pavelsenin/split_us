@@ -14,7 +14,7 @@
 
 ## Operations
 
-- `operations/deployment-stack.md` — deployable compose stack, Prometheus, Grafana, Caddy
+- `operations/deployment-stack.md` — deployable compose stack, Prometheus, Grafana и Nginx
 - `operations/vds-go-live-checklist.md` — пошаговый production checklist для VDS и Telegram bot setup
 - `operations/monitoring-baseline.md` — метрики, dashboard coverage и alert baseline
 - `operations/backup-restore.md` — backup, restore и verification restore

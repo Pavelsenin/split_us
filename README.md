@@ -35,14 +35,18 @@ MVP-система для ведения общего чека в Telegram и р
 3. Для production-like запуска указать:
    - `APP_DOMAIN`
    - `GRAFANA_DOMAIN`
-   - `ACME_EMAIL`
-4. Поднять стек:
+   - `NGINX_APP_CERTIFICATE`
+   - `NGINX_APP_CERTIFICATE_KEY`
+   - `NGINX_GRAFANA_CERTIFICATE`
+   - `NGINX_GRAFANA_CERTIFICATE_KEY`
+4. Положить certificate files в `infra/nginx/certs/`.
+5. Поднять стек:
 
 ```bash
 docker compose up -d --build
 ```
 
-5. Для локального backend-only прогона можно использовать:
+6. Для локального backend-only прогона можно использовать:
 
 ```bash
 mvn -f backend/pom.xml test

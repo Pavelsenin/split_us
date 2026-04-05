@@ -31,7 +31,7 @@
 
 ### 5. Безопасность
 
-- HTTPS терминируется на reverse proxy (`Caddy` или `Nginx`) на VDS.
+- HTTPS терминируется на reverse proxy `Nginx` на VDS.
 - В webhook используется `X-Telegram-Bot-Api-Secret-Token`.
 - Внутренний API аутентифицируется через отдельный `service token`.
 - Админ-панель использует отдельную сессионную аутентификацию с хранением `bcrypt`-хеша пароля.
@@ -82,4 +82,3 @@ flowchart LR
 2. Применить baseline-миграцию.
 3. Закрыть draft OpenAPI.
 4. Прогнать spike solver на граничных наборах балансов.
-
