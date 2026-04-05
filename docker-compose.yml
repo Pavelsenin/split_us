@@ -1,4 +1,29 @@
 services:
+  backend:
+    build:
+      context: ./backend
+    container_name: splitus-backend
+    environment:
+      APP_PORT: 8080
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-splitus}
+      DB_USER: ${POSTGRES_USER:-splitus}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-splitus}
+      TELEGRAM_WEBHOOK_ALIAS: ${TELEGRAM_WEBHOOK_ALIAS:-local-bot}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-change-me}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-splitus_bot}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-change-me-too}
+      ADMIN_ENVIRONMENT_NAME: ${ADMIN_ENVIRONMENT_NAME:-local}
+      ADMIN_BOOTSTRAP_LOGIN: ${ADMIN_BOOTSTRAP_LOGIN:-}
+      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-}
+      ADMIN_BOOTSTRAP_PASSWORD_HASH: ${ADMIN_BOOTSTRAP_PASSWORD_HASH:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8080"
+
   postgres:
     image: postgres:15
     container_name: splitus-postgres
@@ -7,7 +32,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-splitus}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-splitus}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -16,17 +41,62 @@ services:
       timeout: 5s
       retries: 5
 
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: splitus-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-lifecycle"
+      - "--storage.tsdb.path=/prometheus"
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      backend:
+        condition: service_started
+
   grafana:
     image: grafana/grafana:11.1.0
     container_name: splitus-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
-      postgres:
-        condition: service_healthy
+      prometheus:
+        condition: service_started
+
+  caddy:
+    image: caddy:2.8.4
+    container_name: splitus-caddy
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      GRAFANA_DOMAIN: ${GRAFANA_DOMAIN:-grafana.localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-ops@example.com}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      backend:
+        condition: service_started
+      grafana:
+        condition: service_started
 
 volumes:
   postgres-data:
+  prometheus-data:
   grafana-data:
+  caddy-data:
+  caddy-config:

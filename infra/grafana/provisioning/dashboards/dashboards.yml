@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: SplitUs Dashboards
+    orgId: 1
+    folder: SplitUs
+    type: file
+    disableDeletion: false
+    editable: false
+    options:
+      path: /var/lib/grafana/dashboards

@@ -1,0 +1,12 @@
+groups:
+  - name: splitus-alerts
+    rules:
+      - alert: SplitUsSettlementP95High
+        expr: histogram_quantile(0.95, sum by (le) (rate(splitus_settlement_duration_seconds_bucket{outcome="success"}[5m]))) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: splitus-backend
+        annotations:
+          summary: Settlement p95 is above 1 second
+          description: Stable settlement calculation p95 has exceeded 1 second for 5 minutes.
