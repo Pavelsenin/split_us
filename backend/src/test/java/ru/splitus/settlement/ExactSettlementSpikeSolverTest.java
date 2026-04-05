@@ -5,6 +5,9 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests exact settlement spike solver.
+ */
 class ExactSettlementSpikeSolverTest {
 
     private final ExactSettlementSpikeSolver solver = new ExactSettlementSpikeSolver();
@@ -65,4 +68,7 @@ class ExactSettlementSpikeSolverTest {
         );
     }
 }
+
+
+
 

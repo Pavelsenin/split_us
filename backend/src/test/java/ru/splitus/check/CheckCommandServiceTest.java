@@ -19,6 +19,9 @@ import ru.splitus.expense.ExpenseShare;
 import ru.splitus.expense.ExpenseShareRepository;
 import ru.splitus.expense.ExpenseStatus;
 
+/**
+ * Tests check command service.
+ */
 class CheckCommandServiceTest {
 
     @Test
@@ -243,6 +246,9 @@ class CheckCommandServiceTest {
         Assertions.assertEquals(ApiErrorCode.PARTICIPANT_MERGE_INVALID, exception.getCode());
     }
 
+    /**
+     * Represents test context.
+     */
     private static class TestContext {
         private final InMemoryAppUserRepository userRepository = new InMemoryAppUserRepository();
         private final InMemoryCheckBookRepository checkRepository = new InMemoryCheckBookRepository();
@@ -260,20 +266,32 @@ class CheckCommandServiceTest {
         );
     }
 
+    /**
+     * Represents in memory app user repository.
+     */
     private static class InMemoryAppUserRepository implements AppUserRepository {
         private final Map<Long, AppUser> byTelegramId = new HashMap<Long, AppUser>();
 
+        /**
+         * Finds by telegram user id.
+         */
         @Override
         public Optional<AppUser> findByTelegramUserId(long telegramUserId) {
             return Optional.ofNullable(byTelegramId.get(Long.valueOf(telegramUserId)));
         }
 
+        /**
+         * Executes save.
+         */
         @Override
         public AppUser save(AppUser user) {
             byTelegramId.put(Long.valueOf(user.getTelegramUserId()), user);
             return user;
         }
 
+        /**
+         * Updates username.
+         */
         @Override
         public AppUser updateUsername(AppUser user, String telegramUsername) {
             AppUser updated = new AppUser(user.getId(), user.getTelegramUserId(), telegramUsername, user.getRegisteredAt(), OffsetDateTime.now());
@@ -282,20 +300,32 @@ class CheckCommandServiceTest {
         }
     }
 
+    /**
+     * Represents in memory check book repository.
+     */
     private static class InMemoryCheckBookRepository implements CheckBookRepository {
         private final Map<UUID, CheckBook> checks = new HashMap<UUID, CheckBook>();
 
+        /**
+         * Executes save.
+         */
         @Override
         public CheckBook save(CheckBook checkBook) {
             checks.put(checkBook.getId(), checkBook);
             return checkBook;
         }
 
+        /**
+         * Finds by id.
+         */
         @Override
         public Optional<CheckBook> findById(UUID checkId) {
             return Optional.ofNullable(checks.get(checkId));
         }
 
+        /**
+         * Finds by invite token.
+         */
         @Override
         public Optional<CheckBook> findByInviteToken(String inviteToken) {
             for (CheckBook checkBook : checks.values()) {
@@ -306,6 +336,9 @@ class CheckCommandServiceTest {
             return Optional.empty();
         }
 
+        /**
+         * Counts created by owner since.
+         */
         @Override
         public int countCreatedByOwnerSince(UUID ownerUserId, OffsetDateTime since) {
             int count = 0;
@@ -318,15 +351,24 @@ class CheckCommandServiceTest {
         }
     }
 
+    /**
+     * Represents in memory participant repository.
+     */
     private static class InMemoryParticipantRepository implements ParticipantRepository {
         private final List<Participant> participants = new ArrayList<Participant>();
 
+        /**
+         * Executes save.
+         */
         @Override
         public Participant save(Participant participant) {
             participants.add(participant);
             return participant;
         }
 
+        /**
+         * Executes update.
+         */
         @Override
         public Participant update(Participant participant) {
             for (int i = 0; i < participants.size(); i++) {
@@ -339,6 +381,9 @@ class CheckCommandServiceTest {
             return participant;
         }
 
+        /**
+         * Counts by check id.
+         */
         @Override
         public int countByCheckId(UUID checkId) {
             int count = 0;
@@ -350,6 +395,9 @@ class CheckCommandServiceTest {
             return count;
         }
 
+        /**
+         * Checks whether by check id and display name.
+         */
         @Override
         public boolean existsByCheckIdAndDisplayName(UUID checkId, String displayName) {
             for (Participant participant : participants) {
@@ -360,6 +408,9 @@ class CheckCommandServiceTest {
             return false;
         }
 
+        /**
+         * Finds by id.
+         */
         @Override
         public Optional<Participant> findById(UUID participantId) {
             for (Participant participant : participants) {
@@ -370,6 +421,9 @@ class CheckCommandServiceTest {
             return Optional.empty();
         }
 
+        /**
+         * Finds active registered participant.
+         */
         @Override
         public Optional<Participant> findActiveRegisteredParticipant(UUID checkId, UUID userId) {
             for (Participant participant : participants) {
@@ -382,6 +436,9 @@ class CheckCommandServiceTest {
             return Optional.empty();
         }
 
+        /**
+         * Finds by check id.
+         */
         @Override
         public List<Participant> findByCheckId(UUID checkId) {
             List<Participant> result = new ArrayList<Participant>();
@@ -395,9 +452,15 @@ class CheckCommandServiceTest {
         }
     }
 
+    /**
+     * Represents in memory participant merge repository.
+     */
     private static class InMemoryParticipantMergeRepository implements ParticipantMergeRepository {
         private final List<ParticipantMergeRecord> records = new ArrayList<ParticipantMergeRecord>();
 
+        /**
+         * Executes save.
+         */
         @Override
         public ParticipantMergeRecord save(ParticipantMergeRecord record) {
             records.add(record);
@@ -405,26 +468,41 @@ class CheckCommandServiceTest {
         }
     }
 
+    /**
+     * Represents in memory expense repository.
+     */
     private static class InMemoryExpenseRepository implements ExpenseRepository {
         private final Map<UUID, Expense> expenses = new LinkedHashMap<UUID, Expense>();
 
+        /**
+         * Executes save.
+         */
         @Override
         public Expense save(Expense expense) {
             expenses.put(expense.getId(), expense);
             return expense;
         }
 
+        /**
+         * Executes update.
+         */
         @Override
         public Expense update(Expense expense) {
             expenses.put(expense.getId(), expense);
             return expense;
         }
 
+        /**
+         * Finds by id.
+         */
         @Override
         public Optional<Expense> findById(UUID expenseId) {
             return Optional.ofNullable(expenses.get(expenseId));
         }
 
+        /**
+         * Finds by telegram message.
+         */
         @Override
         public Optional<Expense> findByTelegramMessage(long telegramChatId, long telegramMessageId) {
             for (Expense expense : expenses.values()) {
@@ -438,6 +516,9 @@ class CheckCommandServiceTest {
             return Optional.empty();
         }
 
+        /**
+         * Finds by check id.
+         */
         @Override
         public List<Expense> findByCheckId(UUID checkId) {
             List<Expense> result = new ArrayList<Expense>();
@@ -450,20 +531,32 @@ class CheckCommandServiceTest {
             return result;
         }
 
+        /**
+         * Deletes by id.
+         */
         @Override
         public void deleteById(UUID expenseId) {
             expenses.remove(expenseId);
         }
     }
 
+    /**
+     * Represents in memory expense share repository.
+     */
     private static class InMemoryExpenseShareRepository implements ExpenseShareRepository {
         private final List<ExpenseShare> shares = new ArrayList<ExpenseShare>();
 
+        /**
+         * Executes save all.
+         */
         @Override
         public void saveAll(List<ExpenseShare> sharesToSave) {
             shares.addAll(sharesToSave);
         }
 
+        /**
+         * Finds by expense id.
+         */
         @Override
         public List<ExpenseShare> findByExpenseId(UUID expenseId) {
             List<ExpenseShare> result = new ArrayList<ExpenseShare>();
@@ -475,9 +568,15 @@ class CheckCommandServiceTest {
             return result;
         }
 
+        /**
+         * Deletes by expense id.
+         */
         @Override
         public void deleteByExpenseId(UUID expenseId) {
             shares.removeIf(share -> share.getExpenseId().equals(expenseId));
         }
     }
 }
+
+
+

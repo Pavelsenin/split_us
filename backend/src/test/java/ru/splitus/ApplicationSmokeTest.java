@@ -11,6 +11,9 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
                 + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
                 + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
 })
+/**
+ * Tests application smoke.
+ */
 class ApplicationSmokeTest {
 
     @MockBean
@@ -20,3 +23,6 @@ class ApplicationSmokeTest {
     void contextLoads() {
     }
 }
+
+
+

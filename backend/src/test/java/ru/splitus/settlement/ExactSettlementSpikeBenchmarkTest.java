@@ -2,6 +2,9 @@ package ru.splitus.settlement;
 
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests exact settlement spike benchmark.
+ */
 class ExactSettlementSpikeBenchmarkTest {
 
     private final ExactSettlementSpikeSolver solver = new ExactSettlementSpikeSolver();
@@ -36,3 +39,6 @@ class ExactSettlementSpikeBenchmarkTest {
         System.out.println(label + " transfers=" + plan.size() + " durationMicros=" + durationMicros);
     }
 }
+
+
+

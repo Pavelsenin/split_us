@@ -21,6 +21,9 @@ import ru.splitus.expense.ExpenseShare;
 import ru.splitus.expense.ExpenseShareRepository;
 import ru.splitus.expense.ExpenseStatus;
 
+/**
+ * Tests settlement query service.
+ */
 class SettlementQueryServiceTest {
 
     @Test
@@ -41,6 +44,9 @@ class SettlementQueryServiceTest {
         Assertions.assertEquals("carol->alice:300", result.getPlan().getTransfers().get(1).describe());
     }
 
+    /**
+     * Represents fixture.
+     */
     private static class Fixture {
         private final InMemoryCheckBookRepository checkRepository = new InMemoryCheckBookRepository();
         private final InMemoryParticipantRepository participantRepository = new InMemoryParticipantRepository();
@@ -113,20 +119,32 @@ class SettlementQueryServiceTest {
         }
     }
 
+    /**
+     * Represents in memory check book repository.
+     */
     private static class InMemoryCheckBookRepository implements CheckBookRepository {
         private final Map<UUID, CheckBook> checks = new HashMap<UUID, CheckBook>();
 
+        /**
+         * Executes save.
+         */
         @Override
         public CheckBook save(CheckBook checkBook) {
             checks.put(checkBook.getId(), checkBook);
             return checkBook;
         }
 
+        /**
+         * Finds by id.
+         */
         @Override
         public Optional<CheckBook> findById(UUID checkId) {
             return Optional.ofNullable(checks.get(checkId));
         }
 
+        /**
+         * Finds by invite token.
+         */
         @Override
         public Optional<CheckBook> findByInviteToken(String inviteToken) {
             for (CheckBook checkBook : checks.values()) {
@@ -137,21 +155,33 @@ class SettlementQueryServiceTest {
             return Optional.empty();
         }
 
+        /**
+         * Counts created by owner since.
+         */
         @Override
         public int countCreatedByOwnerSince(UUID ownerUserId, OffsetDateTime since) {
             return 0;
         }
     }
 
+    /**
+     * Represents in memory participant repository.
+     */
     private static class InMemoryParticipantRepository implements ParticipantRepository {
         private final List<Participant> participants = new ArrayList<Participant>();
 
+        /**
+         * Executes save.
+         */
         @Override
         public Participant save(Participant participant) {
             participants.add(participant);
             return participant;
         }
 
+        /**
+         * Executes update.
+         */
         @Override
         public Participant update(Participant participant) {
             for (int i = 0; i < participants.size(); i++) {
@@ -164,16 +194,25 @@ class SettlementQueryServiceTest {
             return participant;
         }
 
+        /**
+         * Counts by check id.
+         */
         @Override
         public int countByCheckId(UUID checkId) {
             return 0;
         }
 
+        /**
+         * Checks whether by check id and display name.
+         */
         @Override
         public boolean existsByCheckIdAndDisplayName(UUID checkId, String displayName) {
             return false;
         }
 
+        /**
+         * Finds by id.
+         */
         @Override
         public Optional<Participant> findById(UUID participantId) {
             for (Participant participant : participants) {
@@ -184,6 +223,9 @@ class SettlementQueryServiceTest {
             return Optional.empty();
         }
 
+        /**
+         * Finds active registered participant.
+         */
         @Override
         public Optional<Participant> findActiveRegisteredParticipant(UUID checkId, UUID userId) {
             for (Participant participant : participants) {
@@ -196,6 +238,9 @@ class SettlementQueryServiceTest {
             return Optional.empty();
         }
 
+        /**
+         * Finds by check id.
+         */
         @Override
         public List<Participant> findByCheckId(UUID checkId) {
             List<Participant> result = new ArrayList<Participant>();
@@ -209,31 +254,49 @@ class SettlementQueryServiceTest {
         }
     }
 
+    /**
+     * Represents in memory expense repository.
+     */
     private static class InMemoryExpenseRepository implements ExpenseRepository {
         private final Map<UUID, Expense> expenses = new HashMap<UUID, Expense>();
 
+        /**
+         * Executes save.
+         */
         @Override
         public Expense save(Expense expense) {
             expenses.put(expense.getId(), expense);
             return expense;
         }
 
+        /**
+         * Executes update.
+         */
         @Override
         public Expense update(Expense expense) {
             expenses.put(expense.getId(), expense);
             return expense;
         }
 
+        /**
+         * Finds by id.
+         */
         @Override
         public Optional<Expense> findById(UUID expenseId) {
             return Optional.ofNullable(expenses.get(expenseId));
         }
 
+        /**
+         * Finds by telegram message.
+         */
         @Override
         public Optional<Expense> findByTelegramMessage(long telegramChatId, long telegramMessageId) {
             return Optional.empty();
         }
 
+        /**
+         * Finds by check id.
+         */
         @Override
         public List<Expense> findByCheckId(UUID checkId) {
             List<Expense> result = new ArrayList<Expense>();
@@ -246,20 +309,32 @@ class SettlementQueryServiceTest {
             return result;
         }
 
+        /**
+         * Deletes by id.
+         */
         @Override
         public void deleteById(UUID expenseId) {
             expenses.remove(expenseId);
         }
     }
 
+    /**
+     * Represents in memory expense share repository.
+     */
     private static class InMemoryExpenseShareRepository implements ExpenseShareRepository {
         private final List<ExpenseShare> shares = new ArrayList<ExpenseShare>();
 
+        /**
+         * Executes save all.
+         */
         @Override
         public void saveAll(List<ExpenseShare> sharesToSave) {
             shares.addAll(sharesToSave);
         }
 
+        /**
+         * Finds by expense id.
+         */
         @Override
         public List<ExpenseShare> findByExpenseId(UUID expenseId) {
             List<ExpenseShare> result = new ArrayList<ExpenseShare>();
@@ -271,9 +346,15 @@ class SettlementQueryServiceTest {
             return result;
         }
 
+        /**
+         * Deletes by expense id.
+         */
         @Override
         public void deleteByExpenseId(UUID expenseId) {
             shares.removeIf(share -> share.getExpenseId().equals(expenseId));
         }
     }
 }
+
+
+

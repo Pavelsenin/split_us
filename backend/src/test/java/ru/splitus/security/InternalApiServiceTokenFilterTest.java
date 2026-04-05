@@ -9,6 +9,9 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import ru.splitus.config.InternalApiSecurityProperties;
 
+/**
+ * Tests internal api service token filter.
+ */
 class InternalApiServiceTokenFilterTest {
 
     @Test
@@ -53,3 +56,6 @@ class InternalApiServiceTokenFilterTest {
         return properties;
     }
 }
+
+
+
