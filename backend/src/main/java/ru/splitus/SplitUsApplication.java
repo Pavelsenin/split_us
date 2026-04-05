@@ -3,6 +3,7 @@ package ru.splitus;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import ru.splitus.config.AdminSecurityProperties;
 import ru.splitus.config.InternalApiSecurityProperties;
 import ru.splitus.config.TelegramWebhookProperties;
 
@@ -10,7 +11,11 @@ import ru.splitus.config.TelegramWebhookProperties;
  * Bootstraps the split us application.
  */
 @SpringBootApplication
-@EnableConfigurationProperties({TelegramWebhookProperties.class, InternalApiSecurityProperties.class})
+@EnableConfigurationProperties({
+        TelegramWebhookProperties.class,
+        InternalApiSecurityProperties.class,
+        AdminSecurityProperties.class
+})
 public class SplitUsApplication {
 
     /**
@@ -20,6 +25,5 @@ public class SplitUsApplication {
         SpringApplication.run(SplitUsApplication.class, args);
     }
 }
-
 
 
