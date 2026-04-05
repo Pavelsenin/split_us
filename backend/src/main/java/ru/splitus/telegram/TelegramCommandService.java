@@ -1,11 +1,17 @@
 package ru.splitus.telegram;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import ru.splitus.check.CheckCommandService;
@@ -28,10 +34,25 @@ import ru.splitus.settlement.SettlementResult;
 @Service
 public class TelegramCommandService {
 
+    private static final Logger log = LoggerFactory.getLogger(TelegramCommandService.class);
+
     private final CheckCommandService checkCommandService;
     private final ExpenseCommandService expenseCommandService;
     private final SettlementExecutionService settlementExecutionService;
     private final TelegramWebhookProperties telegramWebhookProperties;
+    private final MeterRegistry meterRegistry;
+
+    /**
+     * Creates a new telegram command service instance.
+     */
+    @Autowired
+    public TelegramCommandService(
+            CheckCommandService checkCommandService,
+            ExpenseCommandService expenseCommandService,
+            SettlementExecutionService settlementExecutionService,
+            TelegramWebhookProperties telegramWebhookProperties) {
+        this(checkCommandService, expenseCommandService, settlementExecutionService, telegramWebhookProperties, new SimpleMeterRegistry());
+    }
 
     /**
      * Creates a new telegram command service instance.
@@ -40,11 +61,13 @@ public class TelegramCommandService {
             CheckCommandService checkCommandService,
             ExpenseCommandService expenseCommandService,
             SettlementExecutionService settlementExecutionService,
-            TelegramWebhookProperties telegramWebhookProperties) {
+            TelegramWebhookProperties telegramWebhookProperties,
+            MeterRegistry meterRegistry) {
         this.checkCommandService = checkCommandService;
         this.expenseCommandService = expenseCommandService;
         this.settlementExecutionService = settlementExecutionService;
         this.telegramWebhookProperties = telegramWebhookProperties;
+        this.meterRegistry = meterRegistry;
     }
 
     /**
@@ -52,82 +75,113 @@ public class TelegramCommandService {
      */
     public TelegramWebhookResult handleUpdate(TelegramUpdate update) {
         if (update == null) {
+            meterRegistry.counter("splitus.telegram.updates.total", "kind", "empty").increment();
             return emptyResult();
         }
         if (update.getEditedMessage() != null) {
+            meterRegistry.counter("splitus.telegram.updates.total", "kind", "edited_message").increment();
             return handleEditedMessage(update.getEditedMessage());
         }
         if (update.getMessage() != null) {
+            meterRegistry.counter("splitus.telegram.updates.total", "kind", "message").increment();
             return handleMessage(update.getMessage());
         }
+        meterRegistry.counter("splitus.telegram.updates.total", "kind", "unsupported").increment();
         return emptyResult();
     }
 
     private TelegramWebhookResult handleEditedMessage(TelegramMessage message) {
+        Timer.Sample sample = Timer.start(meterRegistry);
         if (message.getChat() == null) {
+            recordCommand("edited_message", "ignored", sample);
             return emptyResult();
         }
 
         Optional<ExpenseDetails> existingExpense = findExpenseByTelegramMessage(message);
         if (!existingExpense.isPresent()) {
+            recordCommand("edited_message", "ignored", sample);
             return emptyResult();
         }
 
         try {
             if (message.getText() == null || message.getText().trim().isEmpty()) {
-                return markExpenseRequiresClarification(message, existingExpense.get());
+                TelegramWebhookResult result = markExpenseRequiresClarification(message, existingExpense.get());
+                recordCommand("edited_add_expense", "clarification", sample);
+                return result;
             }
             ParsedCommand command = parseCommand(message.getText().trim());
             if (command == null || command.ignored) {
-                return markExpenseRequiresClarification(message, existingExpense.get());
+                TelegramWebhookResult result = markExpenseRequiresClarification(message, existingExpense.get());
+                recordCommand("edited_add_expense", "clarification", sample);
+                return result;
             }
             if (!"add_expense".equals(command.name)) {
-                return markExpenseRequiresClarification(message, existingExpense.get());
+                TelegramWebhookResult result = markExpenseRequiresClarification(message, existingExpense.get());
+                recordCommand("edited_add_expense", "clarification", sample);
+                return result;
             }
-            return synchronizeExpenseFromEditedAddCommand(message, command.arguments, existingExpense.get());
+            TelegramWebhookResult result = synchronizeExpenseFromEditedAddCommand(message, command.arguments, existingExpense.get());
+            recordCommand("edited_add_expense", "success", sample);
+            return result;
         } catch (ApiException exception) {
             markExpenseRequiresClarification(message, existingExpense.get());
+            log.warn("Telegram edited message sync failed: chatId={} messageId={} reason={}",
+                    message.getChat().getId(),
+                    message.getMessageId(),
+                    exception.getMessage());
+            recordCommand("edited_add_expense", "failure", sample);
             return reply(message.getChat().getId(), exception.getMessage());
         }
     }
 
     private TelegramWebhookResult handleMessage(TelegramMessage message) {
+        Timer.Sample sample = Timer.start(meterRegistry);
         if (message.getChat() == null || message.getText() == null || message.getText().trim().isEmpty()) {
+            recordCommand("message", "ignored", sample);
             return emptyResult();
         }
 
         try {
             ParsedCommand command = parseCommand(message.getText().trim());
             if (command == null || command.ignored) {
+                recordCommand("message", "ignored", sample);
                 return emptyResult();
             }
 
             if ("new_check".equals(command.name)) {
-                return handleNewCheck(message, command.arguments);
+                return successfulCommand(command.name, message, handleNewCheck(message, command.arguments), sample);
             }
             if ("start".equals(command.name)) {
-                return handleStart(message, command.arguments);
+                return successfulCommand(command.name, message, handleStart(message, command.arguments), sample);
             }
             if ("add_guest".equals(command.name)) {
-                return handleAddGuest(message, command.arguments);
+                return successfulCommand(command.name, message, handleAddGuest(message, command.arguments), sample);
             }
             if ("add_expense".equals(command.name)) {
-                return handleAddExpense(message, command.arguments);
+                return successfulCommand(command.name, message, handleAddExpense(message, command.arguments), sample);
             }
             if ("list_expenses".equals(command.name)) {
-                return handleListExpenses(message, command.arguments);
+                return successfulCommand(command.name, message, handleListExpenses(message, command.arguments), sample);
             }
             if ("update_expense".equals(command.name)) {
-                return handleUpdateExpense(message, command.arguments);
+                return successfulCommand(command.name, message, handleUpdateExpense(message, command.arguments), sample);
             }
             if ("delete_expense".equals(command.name)) {
-                return handleDeleteExpense(message, command.arguments);
+                return successfulCommand(command.name, message, handleDeleteExpense(message, command.arguments), sample);
             }
             if ("settle".equals(command.name)) {
-                return handleSettle(message, command.arguments);
+                return successfulCommand(command.name, message, handleSettle(message, command.arguments), sample);
             }
+            log.info("Telegram command ignored because it is unsupported: command={} chatId={}",
+                    command.name, message.getChat().getId());
+            recordCommand(command.name, "unsupported", sample);
             return reply(message.getChat().getId(), "Команда не поддерживается. Сейчас доступны /new_check, /start join_<token>, /add_guest, /add_expense, /list_expenses, /update_expense, /delete_expense и /settle.");
         } catch (ApiException exception) {
+            log.warn("Telegram command failed: chatId={} userId={} reason={}",
+                    message.getChat().getId(),
+                    message.getFrom() == null ? null : message.getFrom().getId(),
+                    exception.getMessage());
+            recordCommand(extractCommandName(message.getText()), "failure", sample);
             return reply(message.getChat().getId(), exception.getMessage());
         }
     }
@@ -578,6 +632,38 @@ public class TelegramCommandService {
         return new TelegramWebhookResult(true, Collections.singletonList(new TelegramOutgoingMessage(chatId, text)));
     }
 
+    private TelegramWebhookResult successfulCommand(
+            String commandName,
+            TelegramMessage message,
+            TelegramWebhookResult result,
+            Timer.Sample sample) {
+        log.info("Telegram command processed: command={} chatId={} userId={}",
+                commandName,
+                message.getChat().getId(),
+                message.getFrom() == null ? null : message.getFrom().getId());
+        recordCommand(commandName, "success", sample);
+        return result;
+    }
+
+    private void recordCommand(String commandName, String outcome, Timer.Sample sample) {
+        String normalizedCommand = commandName == null || commandName.trim().isEmpty() ? "unknown" : commandName;
+        meterRegistry.counter("splitus.telegram.commands.total", "command", normalizedCommand, "outcome", outcome).increment();
+        sample.stop(Timer.builder("splitus.telegram.command.duration")
+                .description("Telegram command processing duration")
+                .tag("command", normalizedCommand)
+                .tag("outcome", outcome)
+                .publishPercentileHistogram()
+                .register(meterRegistry));
+    }
+
+    private String extractCommandName(String text) {
+        ParsedCommand parsedCommand = parseCommand(text == null ? "" : text.trim());
+        if (parsedCommand == null || parsedCommand.ignored) {
+            return "unknown";
+        }
+        return parsedCommand.name;
+    }
+
     /**
      * Represents add expense arguments.
      */
@@ -635,6 +721,3 @@ public class TelegramCommandService {
         }
     }
 }
-
-
-
