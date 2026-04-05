@@ -74,20 +74,22 @@ services:
       prometheus:
         condition: service_started
 
-  caddy:
-    image: caddy:2.8.4
-    container_name: splitus-caddy
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: splitus-nginx
     environment:
       APP_DOMAIN: ${APP_DOMAIN:-localhost}
       GRAFANA_DOMAIN: ${GRAFANA_DOMAIN:-grafana.localhost}
-      ACME_EMAIL: ${ACME_EMAIL:-ops@example.com}
+      NGINX_APP_CERTIFICATE: ${NGINX_APP_CERTIFICATE:-app.crt}
+      NGINX_APP_CERTIFICATE_KEY: ${NGINX_APP_CERTIFICATE_KEY:-app.key}
+      NGINX_GRAFANA_CERTIFICATE: ${NGINX_GRAFANA_CERTIFICATE:-grafana.crt}
+      NGINX_GRAFANA_CERTIFICATE_KEY: ${NGINX_GRAFANA_CERTIFICATE_KEY:-grafana.key}
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
+      - ./infra/nginx/templates:/etc/nginx/templates:ro
+      - ./infra/nginx/certs:/etc/nginx/certs:ro
     depends_on:
       backend:
         condition: service_started
@@ -98,5 +100,3 @@ volumes:
   postgres-data:
   prometheus-data:
   grafana-data:
-  caddy-data:
-  caddy-config:
