@@ -3,6 +3,9 @@
 ## What Is Exposed
 
 - Prometheus scrape endpoint: `/actuator/prometheus`
+- Prometheus scrape config: `infra/prometheus/prometheus.yml`
+- Prometheus alert rules: `infra/prometheus/alerts.yml`
+- Provisioned Grafana dashboard: `infra/grafana/dashboards/splitus-overview.json`
 - Core custom metrics:
   - `splitus.settlement.requests.total`
   - `splitus.settlement.conflicts.total`
