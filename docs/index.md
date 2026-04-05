@@ -20,6 +20,7 @@
 
 ## Release
 
+- `release/implementation-status.md` — статус выполнения implementation plan и оставшиеся gaps
 - `release/acceptance-checklist.md` — финальный приёмочный checklist по MVP
 
 ## Recommended Reading Order
@@ -28,4 +29,5 @@
 2. `user/telegram-user-guide.md`
 3. `operations/deployment-stack.md`
 4. `operations/backup-restore.md`
-5. `release/acceptance-checklist.md`
+5. `release/implementation-status.md`
+6. `release/acceptance-checklist.md`

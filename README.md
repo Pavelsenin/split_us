@@ -8,7 +8,7 @@ MVP-система для ведения общего чека в Telegram и р
 - `openapi/` — draft internal OpenAPI-контракта
 - `infra/` — deployable stack для Prometheus, Grafana и reverse proxy
 - `scripts/` — backup, restore и verification restore
-- `docs/` — архитектура, user guides, operations и release-checklist
+- `docs/` — архитектура, user guides, operations и release-документация
 
 ## Текущее Состояние MVP
 
@@ -61,6 +61,7 @@ mvn -f backend/pom.xml spring-boot:run
 - архитектура: `docs/architecture/`
 - пользовательские инструкции: `docs/user/`
 - operations: `docs/operations/`
+- статус выполнения плана: `docs/release/implementation-status.md`
 - приёмка релиза: `docs/release/acceptance-checklist.md`
 - обзор всех документов: `docs/index.md`
 
