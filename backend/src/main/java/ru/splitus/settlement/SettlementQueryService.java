@@ -44,18 +44,58 @@ public class SettlementQueryService {
 
     @Transactional(readOnly = true)
     public SettlementResult calculate(UUID checkId) {
+        return calculate(loadSnapshot(checkId));
+    }
+
+    public SettlementResult calculate(SettlementSnapshot snapshot) {
+        return new SettlementResult(snapshot.getBalances(), exactSettlementSpikeSolver.solve(snapshot.getBalanceMap()));
+    }
+
+    @Transactional(readOnly = true)
+    public SettlementSnapshot loadSnapshot(UUID checkId) {
         if (!checkBookRepository.findById(checkId).isPresent()) {
             throw new ApiException(ApiErrorCode.CHECK_NOT_FOUND, HttpStatus.NOT_FOUND, "Check not found");
         }
 
         Map<UUID, Participant> activeParticipants = activeParticipantMap(checkId);
+        List<Participant> orderedParticipants = orderedParticipants(activeParticipants);
         Map<String, Long> balances = new LinkedHashMap<String, Long>();
-        for (Participant participant : orderedParticipants(activeParticipants)) {
+        StringBuilder fingerprint = new StringBuilder();
+        fingerprint.append("check=").append(checkId);
+        for (Participant participant : orderedParticipants) {
             balances.put(participant.getDisplayName(), Long.valueOf(0L));
+            fingerprint.append("|participant:")
+                    .append(participant.getId())
+                    .append(':')
+                    .append(participant.getDisplayName())
+                    .append(':')
+                    .append(participant.getType().name())
+                    .append(':')
+                    .append(participant.getCreatedAt());
         }
 
         List<Expense> expenses = expenseRepository.findByCheckId(checkId);
         for (Expense expense : expenses) {
+            List<ExpenseShare> shares = orderedShares(expenseShareRepository.findByExpenseId(expense.getId()));
+            fingerprint.append("|expense:")
+                    .append(expense.getId())
+                    .append(':')
+                    .append(expense.getStatus().name())
+                    .append(':')
+                    .append(expense.getAmountMinor())
+                    .append(':')
+                    .append(expense.getPayerParticipantId())
+                    .append(':')
+                    .append(expense.getUpdatedAt());
+            for (ExpenseShare share : shares) {
+                fingerprint.append("|share:")
+                        .append(share.getExpenseId())
+                        .append(':')
+                        .append(share.getParticipantId())
+                        .append(':')
+                        .append(share.getShareMinor());
+            }
+
             if (expense.getStatus() != ExpenseStatus.VALID) {
                 continue;
             }
@@ -65,7 +105,6 @@ public class SettlementQueryService {
                 increment(balances, payer.getDisplayName(), expense.getAmountMinor());
             }
 
-            List<ExpenseShare> shares = expenseShareRepository.findByExpenseId(expense.getId());
             for (ExpenseShare share : shares) {
                 Participant participant = activeParticipants.get(share.getParticipantId());
                 if (participant != null) {
@@ -78,8 +117,7 @@ public class SettlementQueryService {
         for (Map.Entry<String, Long> entry : balances.entrySet()) {
             settlementBalances.add(new SettlementBalance(entry.getKey(), entry.getValue().longValue()));
         }
-        SettlementPlan plan = exactSettlementSpikeSolver.solve(balances);
-        return new SettlementResult(settlementBalances, plan);
+        return new SettlementSnapshot(checkId, fingerprint.toString(), settlementBalances, balances);
     }
 
     private Map<UUID, Participant> activeParticipantMap(UUID checkId) {
@@ -97,6 +135,12 @@ public class SettlementQueryService {
         List<Participant> participants = new ArrayList<Participant>(activeParticipants.values());
         Collections.sort(participants, (left, right) -> left.getDisplayName().compareTo(right.getDisplayName()));
         return participants;
+    }
+
+    private List<ExpenseShare> orderedShares(List<ExpenseShare> shares) {
+        List<ExpenseShare> orderedShares = new ArrayList<ExpenseShare>(shares);
+        Collections.sort(orderedShares, (left, right) -> left.getParticipantId().toString().compareTo(right.getParticipantId().toString()));
+        return orderedShares;
     }
 
     private void increment(Map<String, Long> balances, String participant, long delta) {
