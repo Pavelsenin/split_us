@@ -6,7 +6,9 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ExactSettlementSpikeSolver {
 
     public SettlementPlan solve(Map<String, Long> participantBalances) {
@@ -159,4 +161,3 @@ public class ExactSettlementSpikeSolver {
         return result;
     }
 }
-
