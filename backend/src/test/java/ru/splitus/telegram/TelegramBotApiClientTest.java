@@ -20,7 +20,7 @@ class TelegramBotApiClientTest {
         RestOperations restOperations = Mockito.mock(RestOperations.class);
         TelegramBotApiClient client = new TelegramBotApiClient(properties, restOperations);
 
-        client.sendMessages(java.util.Collections.singletonList(new TelegramOutgoingMessage(101L, "hello")));
+        client.sendMessages(java.util.Collections.singletonList(new TelegramOutgoingMessage(101L, "hello", 77L)));
 
         ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<HttpEntity> entityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
@@ -32,6 +32,8 @@ class TelegramBotApiClientTest {
         java.util.Map<?, ?> payload = (java.util.Map<?, ?>) entityCaptor.getValue().getBody();
         Assertions.assertEquals(101L, payload.get("chat_id"));
         Assertions.assertEquals("hello", payload.get("text"));
+        Assertions.assertEquals(77L, payload.get("reply_to_message_id"));
+        Assertions.assertEquals(Boolean.TRUE, payload.get("allow_sending_without_reply"));
     }
 
     @Test

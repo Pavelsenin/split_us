@@ -64,6 +64,10 @@ public class TelegramBotApiClient implements TelegramMessageSender {
         Map<String, Object> payload = new LinkedHashMap<String, Object>();
         payload.put("chat_id", outgoingMessage.getChatId());
         payload.put("text", outgoingMessage.getText());
+        if (outgoingMessage.getReplyToMessageId() != null) {
+            payload.put("reply_to_message_id", outgoingMessage.getReplyToMessageId());
+            payload.put("allow_sending_without_reply", Boolean.TRUE);
+        }
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -74,7 +78,9 @@ public class TelegramBotApiClient implements TelegramMessageSender {
                 String.class
         );
 
-        log.info("Telegram reply sent: chatId={}", outgoingMessage.getChatId());
+        log.info("Telegram reply sent: chatId={} replyToMessageId={}",
+                outgoingMessage.getChatId(),
+                outgoingMessage.getReplyToMessageId());
     }
 
     private boolean hasText(String value) {

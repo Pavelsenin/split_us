@@ -130,7 +130,7 @@ public class TelegramCommandService {
                     message.getMessageId(),
                     exception.getMessage());
             recordCommand("edited_add_expense", "failure", sample);
-            return reply(message.getChat().getId(), exception.getMessage());
+            return reply(message, exception.getMessage());
         }
     }
 
@@ -175,21 +175,21 @@ public class TelegramCommandService {
             log.info("Telegram command ignored because it is unsupported: command={} chatId={}",
                     command.name, message.getChat().getId());
             recordCommand(command.name, "unsupported", sample);
-            return reply(message.getChat().getId(), "Команда не поддерживается. Сейчас доступны /new_check, /start join_<token>, /add_guest, /add_expense, /list_expenses, /update_expense, /delete_expense и /settle.");
+            return reply(message, "Команда не поддерживается. Сейчас доступны /new_check, /start join_<token>, /add_guest, /add_expense, /list_expenses, /update_expense, /delete_expense и /settle.");
         } catch (ApiException exception) {
             log.warn("Telegram command failed: chatId={} userId={} reason={}",
                     message.getChat().getId(),
                     message.getFrom() == null ? null : message.getFrom().getId(),
                     exception.getMessage());
             recordCommand(extractCommandName(message.getText()), "failure", sample);
-            return reply(message.getChat().getId(), exception.getMessage());
+            return reply(message, exception.getMessage());
         }
     }
 
     private TelegramWebhookResult handleNewCheck(TelegramMessage message, String arguments) {
         TelegramUser from = requiredUser(message);
         if (arguments.isEmpty()) {
-            return reply(message.getChat().getId(), "Укажите название: /new_check Поход в Питер");
+            return reply(message, "Укажите название: /new_check Поход в Питер");
         }
 
         CheckSnapshot snapshot = checkCommandService.createCheck(arguments, from.getId().longValue(), from.getUsername());
@@ -197,25 +197,25 @@ public class TelegramCommandService {
         String responseText = "Чек \"" + snapshot.getCheckBook().getTitle() + "\" создан.\n"
                 + "Ссылка для присоединения: " + deepLink + "\n"
                 + "Fallback для MVP: создайте группу вручную и добавьте туда бота как администратора.";
-        return reply(message.getChat().getId(), responseText);
+        return reply(message, responseText);
     }
 
     private TelegramWebhookResult handleStart(TelegramMessage message, String arguments) {
         TelegramUser from = requiredUser(message);
         if (!arguments.startsWith("join_")) {
-            return reply(message.getChat().getId(), "Неизвестный deep link. Ожидался формат /start join_<token>.");
+            return reply(message, "Неизвестный deep link. Ожидался формат /start join_<token>.");
         }
 
         String inviteToken = arguments.substring("join_".length()).trim();
         Participant participant = checkCommandService.joinCheckByInviteToken(inviteToken, from.getId().longValue(), from.getUsername());
-        return reply(message.getChat().getId(), "Вы присоединились к чеку как @" + participant.getDisplayName() + ".");
+        return reply(message, "Вы присоединились к чеку как @" + participant.getDisplayName() + ".");
     }
 
     private TelegramWebhookResult handleAddGuest(TelegramMessage message, String arguments) {
         TelegramUser from = requiredUser(message);
         int separator = arguments.indexOf(' ');
         if (separator <= 0 || separator == arguments.length() - 1) {
-            return reply(message.getChat().getId(), "Используйте /add_guest <invite_token> <имя гостя>.");
+            return reply(message, "Используйте /add_guest <invite_token> <имя гостя>.");
         }
 
         String inviteToken = arguments.substring(0, separator).trim();
@@ -226,7 +226,7 @@ public class TelegramCommandService {
                 from.getUsername(),
                 guestName
         );
-        return reply(message.getChat().getId(), "Гость " + guest.getDisplayName() + " добавлен в чек.");
+        return reply(message, "Гость " + guest.getDisplayName() + " добавлен в чек.");
     }
 
     private TelegramWebhookResult handleAddExpense(TelegramMessage message, String arguments) {
@@ -252,7 +252,7 @@ public class TelegramCommandService {
                 actorParticipant.getId()
         );
         return reply(
-                message.getChat().getId(),
+                message,
                 "Расход " + details.getExpense().getAmountMinor() + " RUB добавлен. ID: " + details.getExpense().getId()
                         + ". Делим на: " + joinParticipantNames(splitParticipants) + "."
         );
@@ -265,7 +265,7 @@ public class TelegramCommandService {
         CheckSnapshot snapshot = checkCommandService.getCheckByInviteToken(inviteToken);
         List<ExpenseDetails> expenses = expenseCommandService.listExpenses(snapshot.getCheckBook().getId());
         if (expenses.isEmpty()) {
-            return reply(message.getChat().getId(), "В чеке пока нет расходов.");
+            return reply(message, "В чеке пока нет расходов.");
         }
 
         StringBuilder builder = new StringBuilder();
@@ -281,7 +281,7 @@ public class TelegramCommandService {
                 builder.append(" | ").append(expenseDetails.getExpense().getComment());
             }
         }
-        return reply(message.getChat().getId(), builder.toString());
+        return reply(message, builder.toString());
     }
 
     private TelegramWebhookResult handleUpdateExpense(TelegramMessage message, String arguments) {
@@ -306,7 +306,7 @@ public class TelegramCommandService {
                 actorParticipant.getId()
         );
         return reply(
-                message.getChat().getId(),
+                message,
                 "Расход " + updatedExpense.getExpense().getId() + " обновлен. Новая сумма: "
                         + updatedExpense.getExpense().getAmountMinor() + " RUB. Делим на: "
                         + joinParticipantNames(splitParticipants) + "."
@@ -323,7 +323,7 @@ public class TelegramCommandService {
                 from.getUsername()
         );
         expenseCommandService.deleteExpense(expenseId, actorParticipant.getId());
-        return reply(message.getChat().getId(), "Расход " + expenseId + " удален.");
+        return reply(message, "Расход " + expenseId + " удален.");
     }
 
     private TelegramWebhookResult handleSettle(TelegramMessage message, String arguments) {
@@ -335,7 +335,7 @@ public class TelegramCommandService {
                 from.getUsername()
         );
         SettlementResult settlementResult = settlementExecutionService.calculateStable(actorParticipant.getCheckId());
-        return reply(message.getChat().getId(), formatSettlementResult(settlementResult));
+        return reply(message, formatSettlementResult(settlementResult));
     }
 
     private TelegramWebhookResult synchronizeExpenseFromEditedAddCommand(
@@ -369,7 +369,7 @@ public class TelegramCommandService {
                 actorParticipant.getId()
         );
         return reply(
-                message.getChat().getId(),
+                message,
                 "Расход " + updatedExpense.getExpense().getId() + " синхронизирован после редактирования сообщения."
         );
     }
@@ -391,7 +391,7 @@ public class TelegramCommandService {
                 actorParticipant.getId()
         );
         return reply(
-                message.getChat().getId(),
+                message,
                 "Расход " + updatedExpense.getExpense().getId() + " требует уточнения после редактирования сообщения."
         );
     }
@@ -628,8 +628,10 @@ public class TelegramCommandService {
         return new TelegramWebhookResult(true, Collections.<TelegramOutgoingMessage>emptyList());
     }
 
-    private TelegramWebhookResult reply(Long chatId, String text) {
-        return new TelegramWebhookResult(true, Collections.singletonList(new TelegramOutgoingMessage(chatId, text)));
+    private TelegramWebhookResult reply(TelegramMessage message, String text) {
+        Long replyToMessageId = message == null ? null : message.getMessageId();
+        Long chatId = message == null || message.getChat() == null ? null : message.getChat().getId();
+        return new TelegramWebhookResult(true, Collections.singletonList(new TelegramOutgoingMessage(chatId, text, replyToMessageId)));
     }
 
     private TelegramWebhookResult successfulCommand(

@@ -43,8 +43,25 @@ class TelegramCommandServiceTest {
 
         Assertions.assertTrue(result.isAccepted());
         Assertions.assertEquals(1, result.getOutgoingMessages().size());
+        Assertions.assertEquals(101L, result.getOutgoingMessages().get(0).getChatId());
+        Assertions.assertEquals(1L, result.getOutgoingMessages().get(0).getReplyToMessageId());
         Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("Weekend"));
         Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("https://t.me/splitus_bot?start=join_"));
+    }
+
+    @Test
+    void newCheckCommandSupportsAnyGroupChatWhereBotIsPresent() {
+        Fixture fixture = new Fixture();
+
+        TelegramWebhookResult result = fixture.service.handleUpdate(
+                update(-1003456789012L, 1001L, "alice", 77L, "supergroup", "/new_check Team Lunch")
+        );
+
+        Assertions.assertTrue(result.isAccepted());
+        Assertions.assertEquals(1, result.getOutgoingMessages().size());
+        Assertions.assertEquals(-1003456789012L, result.getOutgoingMessages().get(0).getChatId());
+        Assertions.assertEquals(77L, result.getOutgoingMessages().get(0).getReplyToMessageId());
+        Assertions.assertTrue(result.getOutgoingMessages().get(0).getText().contains("Team Lunch"));
     }
 
     @Test
@@ -258,6 +275,10 @@ class TelegramCommandServiceTest {
     }
 
     private TelegramUpdate update(Long chatId, Long userId, String username, Long messageId, String text) {
+        return update(chatId, userId, username, messageId, "private", text);
+    }
+
+    private TelegramUpdate update(Long chatId, Long userId, String username, Long messageId, String chatType, String text) {
         TelegramUser user = new TelegramUser();
         user.setId(userId);
         user.setUsername(username);
@@ -265,7 +286,7 @@ class TelegramCommandServiceTest {
 
         TelegramChat chat = new TelegramChat();
         chat.setId(chatId);
-        chat.setType("private");
+        chat.setType(chatType);
 
         TelegramMessage message = new TelegramMessage();
         message.setMessageId(messageId);
@@ -635,6 +656,5 @@ class TelegramCommandServiceTest {
         }
     }
 }
-
 
 
