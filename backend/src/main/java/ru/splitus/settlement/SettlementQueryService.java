@@ -35,6 +35,9 @@ public class SettlementQueryService {
     private final ExpenseShareRepository expenseShareRepository;
     private final ExactSettlementSpikeSolver exactSettlementSpikeSolver;
 
+    /**
+     * Creates a new settlement query service instance.
+     */
     public SettlementQueryService(
             CheckBookRepository checkBookRepository,
             ParticipantRepository participantRepository,
@@ -173,3 +176,6 @@ public class SettlementQueryService {
         balances.put(participant, Long.valueOf((current == null ? 0L : current.longValue()) + delta));
     }
 }
+
+
+

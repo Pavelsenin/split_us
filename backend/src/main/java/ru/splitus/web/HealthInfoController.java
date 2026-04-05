@@ -6,15 +6,24 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Handles health info web requests.
+ */
 @RestController
 @RequestMapping("/api/internal/health")
 public class HealthInfoController {
 
+    /**
+     * Executes live.
+     */
     @GetMapping("/live")
     public Map<String, Object> live() {
         return buildResponse("UP", "Application process is alive");
     }
 
+    /**
+     * Executes ready.
+     */
     @GetMapping("/ready")
     public Map<String, Object> ready() {
         return buildResponse("UP", "Application is ready to accept traffic");
@@ -27,4 +36,7 @@ public class HealthInfoController {
         return response;
     }
 }
+
+
+
 

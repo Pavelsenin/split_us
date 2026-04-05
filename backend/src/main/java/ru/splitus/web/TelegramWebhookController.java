@@ -15,6 +15,9 @@ import ru.splitus.telegram.TelegramCommandService;
 import ru.splitus.telegram.TelegramUpdate;
 import ru.splitus.telegram.TelegramWebhookResult;
 
+/**
+ * Handles telegram webhook web requests.
+ */
 @RestController
 @RequestMapping("/api/telegram/webhook")
 public class TelegramWebhookController {
@@ -22,11 +25,17 @@ public class TelegramWebhookController {
     private final TelegramWebhookProperties properties;
     private final TelegramCommandService telegramCommandService;
 
+    /**
+     * Creates a new telegram webhook controller instance.
+     */
     public TelegramWebhookController(TelegramWebhookProperties properties, TelegramCommandService telegramCommandService) {
         this.properties = properties;
         this.telegramCommandService = telegramCommandService;
     }
 
+    /**
+     * Executes accept update.
+     */
     @PostMapping("/{alias}")
     public ResponseEntity<Map<String, Object>> acceptUpdate(
             @PathVariable String alias,
@@ -56,3 +65,6 @@ public class TelegramWebhookController {
         return ResponseEntity.status(status).body(payload);
     }
 }
+
+
+

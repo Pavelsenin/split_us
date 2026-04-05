@@ -12,15 +12,24 @@ import org.springframework.stereotype.Repository;
 import ru.splitus.check.AppUser;
 import ru.splitus.check.AppUserRepository;
 
+/**
+ * Represents jdbc app user repository.
+ */
 @Repository
 public class JdbcAppUserRepository implements AppUserRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    /**
+     * Creates a new jdbc app user repository instance.
+     */
     public JdbcAppUserRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Finds by telegram user id.
+     */
     @Override
     public Optional<AppUser> findByTelegramUserId(long telegramUserId) {
         MapSqlParameterSource parameters = new MapSqlParameterSource("telegramUserId", Long.valueOf(telegramUserId));
@@ -32,6 +41,9 @@ public class JdbcAppUserRepository implements AppUserRepository {
         ).stream().findFirst();
     }
 
+    /**
+     * Executes save.
+     */
     @Override
     public AppUser save(AppUser user) {
         MapSqlParameterSource parameters = new MapSqlParameterSource()
@@ -48,6 +60,9 @@ public class JdbcAppUserRepository implements AppUserRepository {
         return user;
     }
 
+    /**
+     * Updates username.
+     */
     @Override
     public AppUser updateUsername(AppUser user, String telegramUsername) {
         OffsetDateTime updatedAt = OffsetDateTime.now();
@@ -75,4 +90,7 @@ public class JdbcAppUserRepository implements AppUserRepository {
         }
     };
 }
+
+
+
 

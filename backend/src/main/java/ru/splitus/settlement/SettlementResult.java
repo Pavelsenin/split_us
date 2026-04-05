@@ -12,6 +12,9 @@ public class SettlementResult {
     private final List<SettlementBalance> balances;
     private final SettlementPlan plan;
 
+    /**
+     * Creates a new settlement result instance.
+     */
     public SettlementResult(List<SettlementBalance> balances, SettlementPlan plan) {
         this.balances = Collections.unmodifiableList(new ArrayList<SettlementBalance>(balances));
         this.plan = plan;
@@ -31,3 +34,6 @@ public class SettlementResult {
         return plan;
     }
 }
+
+
+

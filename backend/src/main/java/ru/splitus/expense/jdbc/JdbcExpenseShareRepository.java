@@ -12,15 +12,24 @@ import org.springframework.stereotype.Repository;
 import ru.splitus.expense.ExpenseShare;
 import ru.splitus.expense.ExpenseShareRepository;
 
+/**
+ * Represents jdbc expense share repository.
+ */
 @Repository
 public class JdbcExpenseShareRepository implements ExpenseShareRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    /**
+     * Creates a new jdbc expense share repository instance.
+     */
     public JdbcExpenseShareRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Executes save all.
+     */
     @Override
     public void saveAll(List<ExpenseShare> shares) {
         if (shares.isEmpty()) {
@@ -46,6 +55,9 @@ public class JdbcExpenseShareRepository implements ExpenseShareRepository {
         );
     }
 
+    /**
+     * Finds by expense id.
+     */
     @Override
     public List<ExpenseShare> findByExpenseId(UUID expenseId) {
         return jdbcTemplate.query(
@@ -55,6 +67,9 @@ public class JdbcExpenseShareRepository implements ExpenseShareRepository {
         );
     }
 
+    /**
+     * Deletes by expense id.
+     */
     @Override
     public void deleteByExpenseId(UUID expenseId) {
         jdbcTemplate.update("delete from expense_share where expense_id = :expenseId", new MapSqlParameterSource("expenseId", expenseId));
@@ -71,3 +86,6 @@ public class JdbcExpenseShareRepository implements ExpenseShareRepository {
         }
     };
 }
+
+
+

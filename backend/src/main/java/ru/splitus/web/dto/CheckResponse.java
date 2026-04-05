@@ -6,6 +6,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import ru.splitus.check.CheckSnapshot;
 
+/**
+ * Represents the check response payload.
+ */
 public class CheckResponse {
 
     private UUID id;
@@ -18,6 +21,9 @@ public class CheckResponse {
     private OffsetDateTime createdAt;
     private List<ParticipantResponse> participants;
 
+    /**
+     * Creates check response from domain.
+     */
     public static CheckResponse fromDomain(CheckSnapshot snapshot) {
         CheckResponse response = new CheckResponse();
         response.id = snapshot.getCheckBook().getId();
@@ -34,39 +40,69 @@ public class CheckResponse {
         return response;
     }
 
+    /**
+     * Returns the id.
+     */
     public UUID getId() {
         return id;
     }
 
+    /**
+     * Returns the title.
+     */
     public String getTitle() {
         return title;
     }
 
+    /**
+     * Returns the currency code.
+     */
     public String getCurrencyCode() {
         return currencyCode;
     }
 
+    /**
+     * Returns the owner user id.
+     */
     public UUID getOwnerUserId() {
         return ownerUserId;
     }
 
+    /**
+     * Returns the invite token.
+     */
     public String getInviteToken() {
         return inviteToken;
     }
 
+    /**
+     * Returns the telegram chat id.
+     */
     public Long getTelegramChatId() {
         return telegramChatId;
     }
 
+    /**
+     * Returns whether chat active.
+     */
     public boolean isChatActive() {
         return chatActive;
     }
 
+    /**
+     * Returns the created at.
+     */
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
+    /**
+     * Returns the participants.
+     */
     public List<ParticipantResponse> getParticipants() {
         return participants;
     }
 }
+
+
+

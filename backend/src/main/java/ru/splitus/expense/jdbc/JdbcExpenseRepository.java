@@ -14,15 +14,24 @@ import ru.splitus.expense.Expense;
 import ru.splitus.expense.ExpenseRepository;
 import ru.splitus.expense.ExpenseStatus;
 
+/**
+ * Represents jdbc expense repository.
+ */
 @Repository
 public class JdbcExpenseRepository implements ExpenseRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    /**
+     * Creates a new jdbc expense repository instance.
+     */
     public JdbcExpenseRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Executes save.
+     */
     @Override
     public Expense save(Expense expense) {
         jdbcTemplate.update(
@@ -38,6 +47,9 @@ public class JdbcExpenseRepository implements ExpenseRepository {
         return expense;
     }
 
+    /**
+     * Executes update.
+     */
     @Override
     public Expense update(Expense expense) {
         jdbcTemplate.update(
@@ -50,6 +62,9 @@ public class JdbcExpenseRepository implements ExpenseRepository {
         return expense;
     }
 
+    /**
+     * Finds by id.
+     */
     @Override
     public Optional<Expense> findById(UUID expenseId) {
         return jdbcTemplate.query(
@@ -61,6 +76,9 @@ public class JdbcExpenseRepository implements ExpenseRepository {
         ).stream().findFirst();
     }
 
+    /**
+     * Finds by telegram message.
+     */
     @Override
     public Optional<Expense> findByTelegramMessage(long telegramChatId, long telegramMessageId) {
         return jdbcTemplate.query(
@@ -74,6 +92,9 @@ public class JdbcExpenseRepository implements ExpenseRepository {
         ).stream().findFirst();
     }
 
+    /**
+     * Finds by check id.
+     */
     @Override
     public List<Expense> findByCheckId(UUID checkId) {
         return jdbcTemplate.query(
@@ -85,6 +106,9 @@ public class JdbcExpenseRepository implements ExpenseRepository {
         );
     }
 
+    /**
+     * Deletes by id.
+     */
     @Override
     public void deleteById(UUID expenseId) {
         jdbcTemplate.update("delete from expense where id = :id", new MapSqlParameterSource("id", expenseId));
@@ -132,3 +156,6 @@ public class JdbcExpenseRepository implements ExpenseRepository {
         }
     };
 }
+
+
+

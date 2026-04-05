@@ -6,15 +6,24 @@ import org.springframework.stereotype.Repository;
 import ru.splitus.check.ParticipantMergeRecord;
 import ru.splitus.check.ParticipantMergeRepository;
 
+/**
+ * Represents jdbc participant merge repository.
+ */
 @Repository
 public class JdbcParticipantMergeRepository implements ParticipantMergeRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    /**
+     * Creates a new jdbc participant merge repository instance.
+     */
     public JdbcParticipantMergeRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Executes save.
+     */
     @Override
     public ParticipantMergeRecord save(ParticipantMergeRecord record) {
         jdbcTemplate.update(
@@ -31,3 +40,6 @@ public class JdbcParticipantMergeRepository implements ParticipantMergeRepositor
         return record;
     }
 }
+
+
+

@@ -14,15 +14,24 @@ import ru.splitus.check.Participant;
 import ru.splitus.check.ParticipantRepository;
 import ru.splitus.check.ParticipantType;
 
+/**
+ * Represents jdbc participant repository.
+ */
 @Repository
 public class JdbcParticipantRepository implements ParticipantRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    /**
+     * Creates a new jdbc participant repository instance.
+     */
     public JdbcParticipantRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Executes save.
+     */
     @Override
     public Participant save(Participant participant) {
         MapSqlParameterSource parameters = new MapSqlParameterSource()
@@ -41,6 +50,9 @@ public class JdbcParticipantRepository implements ParticipantRepository {
         return participant;
     }
 
+    /**
+     * Executes update.
+     */
     @Override
     public Participant update(Participant participant) {
         MapSqlParameterSource parameters = new MapSqlParameterSource()
@@ -56,6 +68,9 @@ public class JdbcParticipantRepository implements ParticipantRepository {
         return participant;
     }
 
+    /**
+     * Counts by check id.
+     */
     @Override
     public int countByCheckId(UUID checkId) {
         Integer count = jdbcTemplate.queryForObject(
@@ -66,6 +81,9 @@ public class JdbcParticipantRepository implements ParticipantRepository {
         return count == null ? 0 : count.intValue();
     }
 
+    /**
+     * Checks whether by check id and display name.
+     */
     @Override
     public boolean existsByCheckIdAndDisplayName(UUID checkId, String displayName) {
         Integer count = jdbcTemplate.queryForObject(
@@ -76,6 +94,9 @@ public class JdbcParticipantRepository implements ParticipantRepository {
         return count != null && count.intValue() > 0;
     }
 
+    /**
+     * Finds by id.
+     */
     @Override
     public Optional<Participant> findById(UUID participantId) {
         return jdbcTemplate.query(
@@ -86,6 +107,9 @@ public class JdbcParticipantRepository implements ParticipantRepository {
         ).stream().findFirst();
     }
 
+    /**
+     * Finds active registered participant.
+     */
     @Override
     public Optional<Participant> findActiveRegisteredParticipant(UUID checkId, UUID userId) {
         return jdbcTemplate.query(
@@ -96,6 +120,9 @@ public class JdbcParticipantRepository implements ParticipantRepository {
         ).stream().findFirst();
     }
 
+    /**
+     * Finds by check id.
+     */
     @Override
     public List<Participant> findByCheckId(UUID checkId) {
         return jdbcTemplate.query(
@@ -121,3 +148,6 @@ public class JdbcParticipantRepository implements ParticipantRepository {
         }
     };
 }
+
+
+

@@ -17,6 +17,9 @@ public class InternalSettlementController {
 
     private final SettlementExecutionService settlementExecutionService;
 
+    /**
+     * Creates a new internal settlement controller instance.
+     */
     public InternalSettlementController(SettlementExecutionService settlementExecutionService) {
         this.settlementExecutionService = settlementExecutionService;
     }
@@ -32,3 +35,6 @@ public class InternalSettlementController {
         return SettlementResponse.fromDomain(settlementExecutionService.calculateStable(checkId));
     }
 }
+
+
+

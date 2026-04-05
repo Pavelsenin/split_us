@@ -8,6 +8,9 @@ public class SettlementBalance {
     private final String participant;
     private final long balanceMinor;
 
+    /**
+     * Creates a new settlement balance instance.
+     */
     public SettlementBalance(String participant, long balanceMinor) {
         this.participant = participant;
         this.balanceMinor = balanceMinor;
@@ -27,3 +30,6 @@ public class SettlementBalance {
         return balanceMinor;
     }
 }
+
+
+

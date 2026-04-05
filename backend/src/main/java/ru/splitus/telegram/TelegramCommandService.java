@@ -22,6 +22,9 @@ import ru.splitus.settlement.SettlementExecutionService;
 import ru.splitus.settlement.SettlementPlan;
 import ru.splitus.settlement.SettlementResult;
 
+/**
+ * Coordinates telegram command operations.
+ */
 @Service
 public class TelegramCommandService {
 
@@ -30,6 +33,9 @@ public class TelegramCommandService {
     private final SettlementExecutionService settlementExecutionService;
     private final TelegramWebhookProperties telegramWebhookProperties;
 
+    /**
+     * Creates a new telegram command service instance.
+     */
     public TelegramCommandService(
             CheckCommandService checkCommandService,
             ExpenseCommandService expenseCommandService,
@@ -41,6 +47,9 @@ public class TelegramCommandService {
         this.telegramWebhookProperties = telegramWebhookProperties;
     }
 
+    /**
+     * Handles update.
+     */
     public TelegramWebhookResult handleUpdate(TelegramUpdate update) {
         if (update == null) {
             return emptyResult();
@@ -569,6 +578,9 @@ public class TelegramCommandService {
         return new TelegramWebhookResult(true, Collections.singletonList(new TelegramOutgoingMessage(chatId, text)));
     }
 
+    /**
+     * Represents add expense arguments.
+     */
     private static final class AddExpenseArguments {
         private final String inviteToken;
         private final long amountMinor;
@@ -583,6 +595,9 @@ public class TelegramCommandService {
         }
     }
 
+    /**
+     * Represents update expense arguments.
+     */
     private static final class UpdateExpenseArguments {
         private final UUID expenseId;
         private final long amountMinor;
@@ -597,6 +612,9 @@ public class TelegramCommandService {
         }
     }
 
+    /**
+     * Represents parsed command.
+     */
     private static final class ParsedCommand {
         private final String name;
         private final String arguments;
@@ -617,3 +635,6 @@ public class TelegramCommandService {
         }
     }
 }
+
+
+

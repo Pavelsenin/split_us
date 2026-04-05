@@ -1,5 +1,8 @@
 package ru.splitus.error;
 
+/**
+ * Enumerates api error code values.
+ */
 public enum ApiErrorCode {
     VALIDATION_ERROR,
     AUTHENTICATION_FAILED,
@@ -18,3 +21,6 @@ public enum ApiErrorCode {
     SETTLEMENT_ALREADY_RUNNING,
     SETTLEMENT_STATE_CHANGED
 }
+
+
+

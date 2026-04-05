@@ -24,16 +24,25 @@ import ru.splitus.web.dto.CreateExpenseRequest;
 import ru.splitus.web.dto.ExpenseResponse;
 import ru.splitus.web.dto.UpdateExpenseRequest;
 
+/**
+ * Handles internal expense web requests.
+ */
 @RestController
 @RequestMapping("/api/internal")
 public class InternalExpenseController {
 
     private final ExpenseCommandService expenseCommandService;
 
+    /**
+     * Creates a new internal expense controller instance.
+     */
     public InternalExpenseController(ExpenseCommandService expenseCommandService) {
         this.expenseCommandService = expenseCommandService;
     }
 
+    /**
+     * Creates expense.
+     */
     @PostMapping("/checks/{checkId}/expenses")
     public ResponseEntity<ExpenseResponse> createExpense(
             @PathVariable UUID checkId,
@@ -51,6 +60,9 @@ public class InternalExpenseController {
                 .body(ExpenseResponse.fromDomain(details));
     }
 
+    /**
+     * Lists expenses.
+     */
     @GetMapping("/checks/{checkId}/expenses")
     public List<ExpenseResponse> listExpenses(@PathVariable UUID checkId) {
         return expenseCommandService.listExpenses(checkId)
@@ -59,11 +71,17 @@ public class InternalExpenseController {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Returns the expense.
+     */
     @GetMapping("/expenses/{expenseId}")
     public ExpenseResponse getExpense(@PathVariable UUID expenseId) {
         return ExpenseResponse.fromDomain(expenseCommandService.getExpense(expenseId));
     }
 
+    /**
+     * Updates expense.
+     */
     @PatchMapping("/expenses/{expenseId}")
     public ExpenseResponse updateExpense(
             @PathVariable UUID expenseId,
@@ -79,6 +97,9 @@ public class InternalExpenseController {
         ));
     }
 
+    /**
+     * Deletes expense.
+     */
     @DeleteMapping("/expenses/{expenseId}")
     public ResponseEntity<Void> deleteExpense(
             @PathVariable UUID expenseId,
@@ -98,3 +119,6 @@ public class InternalExpenseController {
         }
     }
 }
+
+
+

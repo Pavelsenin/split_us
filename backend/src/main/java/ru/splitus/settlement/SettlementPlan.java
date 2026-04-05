@@ -11,6 +11,9 @@ public class SettlementPlan {
 
     private final List<Transfer> transfers;
 
+    /**
+     * Creates a new settlement plan instance.
+     */
     public SettlementPlan(List<Transfer> transfers) {
         this.transfers = Collections.unmodifiableList(new ArrayList<Transfer>(transfers));
     }
@@ -37,6 +40,9 @@ public class SettlementPlan {
         private final String toParticipant;
         private final long amountMinor;
 
+        /**
+         * Creates a new transfer instance.
+         */
         public Transfer(String fromParticipant, String toParticipant, long amountMinor) {
             this.fromParticipant = fromParticipant;
             this.toParticipant = toParticipant;
@@ -72,3 +78,6 @@ public class SettlementPlan {
         }
     }
 }
+
+
+

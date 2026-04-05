@@ -20,16 +20,25 @@ import ru.splitus.web.dto.CreateCheckRequest;
 import ru.splitus.web.dto.MergeParticipantRequest;
 import ru.splitus.web.dto.ParticipantResponse;
 
+/**
+ * Handles internal check web requests.
+ */
 @RestController
 @RequestMapping("/api/internal/checks")
 public class InternalCheckController {
 
     private final CheckCommandService checkCommandService;
 
+    /**
+     * Creates a new internal check controller instance.
+     */
     public InternalCheckController(CheckCommandService checkCommandService) {
         this.checkCommandService = checkCommandService;
     }
 
+    /**
+     * Creates check.
+     */
     @PostMapping
     public ResponseEntity<CheckResponse> createCheck(@Valid @RequestBody CreateCheckRequest request) {
         CheckSnapshot snapshot = checkCommandService.createCheck(
@@ -41,11 +50,17 @@ public class InternalCheckController {
                 .body(CheckResponse.fromDomain(snapshot));
     }
 
+    /**
+     * Returns the check.
+     */
     @GetMapping("/{checkId}")
     public CheckResponse getCheck(@PathVariable UUID checkId) {
         return CheckResponse.fromDomain(checkCommandService.getCheck(checkId));
     }
 
+    /**
+     * Adds guest participant.
+     */
     @PostMapping("/{checkId}/participants/guest")
     public ResponseEntity<ParticipantResponse> addGuestParticipant(
             @PathVariable UUID checkId,
@@ -55,6 +70,9 @@ public class InternalCheckController {
                 .body(ParticipantResponse.fromDomain(participant));
     }
 
+    /**
+     * Adds registered participant.
+     */
     @PostMapping("/{checkId}/participants/registered")
     public ResponseEntity<ParticipantResponse> addRegisteredParticipant(
             @PathVariable UUID checkId,
@@ -68,6 +86,9 @@ public class InternalCheckController {
                 .body(ParticipantResponse.fromDomain(participant));
     }
 
+    /**
+     * Merges participant.
+     */
     @PostMapping("/{checkId}/participants/{sourceParticipantId}/merge")
     public ParticipantResponse mergeParticipant(
             @PathVariable UUID checkId,
@@ -81,3 +102,6 @@ public class InternalCheckController {
         ));
     }
 }
+
+
+

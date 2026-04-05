@@ -12,15 +12,24 @@ import org.springframework.stereotype.Repository;
 import ru.splitus.check.CheckBook;
 import ru.splitus.check.CheckBookRepository;
 
+/**
+ * Represents jdbc check book repository.
+ */
 @Repository
 public class JdbcCheckBookRepository implements CheckBookRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    /**
+     * Creates a new jdbc check book repository instance.
+     */
     public JdbcCheckBookRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Executes save.
+     */
     @Override
     public CheckBook save(CheckBook checkBook) {
         MapSqlParameterSource parameters = new MapSqlParameterSource()
@@ -40,6 +49,9 @@ public class JdbcCheckBookRepository implements CheckBookRepository {
         return checkBook;
     }
 
+    /**
+     * Finds by id.
+     */
     @Override
     public Optional<CheckBook> findById(UUID checkId) {
         return jdbcTemplate.query(
@@ -50,6 +62,9 @@ public class JdbcCheckBookRepository implements CheckBookRepository {
         ).stream().findFirst();
     }
 
+    /**
+     * Finds by invite token.
+     */
     @Override
     public Optional<CheckBook> findByInviteToken(String inviteToken) {
         return jdbcTemplate.query(
@@ -60,6 +75,9 @@ public class JdbcCheckBookRepository implements CheckBookRepository {
         ).stream().findFirst();
     }
 
+    /**
+     * Counts created by owner since.
+     */
     @Override
     public int countCreatedByOwnerSince(UUID ownerUserId, OffsetDateTime since) {
         Integer count = jdbcTemplate.queryForObject(
@@ -87,3 +105,6 @@ public class JdbcCheckBookRepository implements CheckBookRepository {
         }
     };
 }
+
+
+

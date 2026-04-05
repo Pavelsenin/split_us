@@ -18,6 +18,9 @@ import ru.splitus.check.ParticipantRepository;
 import ru.splitus.error.ApiErrorCode;
 import ru.splitus.error.ApiException;
 
+/**
+ * Coordinates expense command operations.
+ */
 @Service
 public class ExpenseCommandService {
 
@@ -28,6 +31,9 @@ public class ExpenseCommandService {
     private final ExpenseRepository expenseRepository;
     private final ExpenseShareRepository expenseShareRepository;
 
+    /**
+     * Creates a new expense command service instance.
+     */
     public ExpenseCommandService(
             CheckBookRepository checkBookRepository,
             ParticipantRepository participantRepository,
@@ -39,6 +45,9 @@ public class ExpenseCommandService {
         this.expenseShareRepository = expenseShareRepository;
     }
 
+    /**
+     * Creates expense.
+     */
     @Transactional
     public ExpenseDetails createExpense(
             UUID checkId,
@@ -61,6 +70,9 @@ public class ExpenseCommandService {
         );
     }
 
+    /**
+     * Creates telegram expense.
+     */
     @Transactional
     public ExpenseDetails createTelegramExpense(
             UUID checkId,
@@ -127,12 +139,18 @@ public class ExpenseCommandService {
         return new ExpenseDetails(expense, shares);
     }
 
+    /**
+     * Returns the expense.
+     */
     @Transactional(readOnly = true)
     public ExpenseDetails getExpense(UUID expenseId) {
         Expense expense = loadExpense(expenseId);
         return new ExpenseDetails(expense, expenseShareRepository.findByExpenseId(expenseId));
     }
 
+    /**
+     * Finds expense by telegram message.
+     */
     @Transactional(readOnly = true)
     public Optional<ExpenseDetails> findExpenseByTelegramMessage(long telegramChatId, long telegramMessageId) {
         Optional<Expense> expense = expenseRepository.findByTelegramMessage(telegramChatId, telegramMessageId);
@@ -142,6 +160,9 @@ public class ExpenseCommandService {
         return Optional.of(new ExpenseDetails(expense.get(), expenseShareRepository.findByExpenseId(expense.get().getId())));
     }
 
+    /**
+     * Lists expenses.
+     */
     @Transactional(readOnly = true)
     public List<ExpenseDetails> listExpenses(UUID checkId) {
         loadCheck(checkId);
@@ -153,6 +174,9 @@ public class ExpenseCommandService {
         return details;
     }
 
+    /**
+     * Updates expense.
+     */
     @Transactional
     public ExpenseDetails updateExpense(
             UUID expenseId,
@@ -205,6 +229,9 @@ public class ExpenseCommandService {
         return new ExpenseDetails(updatedExpense, updatedShares);
     }
 
+    /**
+     * Deletes expense.
+     */
     @Transactional
     public void deleteExpense(UUID expenseId, UUID actorParticipantId) {
         Expense existingExpense = loadExpense(expenseId);
@@ -335,3 +362,6 @@ public class ExpenseCommandService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 }
+
+
+

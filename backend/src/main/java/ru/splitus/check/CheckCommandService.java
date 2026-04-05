@@ -17,6 +17,9 @@ import ru.splitus.expense.ExpenseRepository;
 import ru.splitus.expense.ExpenseShare;
 import ru.splitus.expense.ExpenseShareRepository;
 
+/**
+ * Coordinates check command operations.
+ */
 @Service
 public class CheckCommandService {
 
@@ -31,6 +34,9 @@ public class CheckCommandService {
     private final ExpenseRepository expenseRepository;
     private final ExpenseShareRepository expenseShareRepository;
 
+    /**
+     * Creates a new check command service instance.
+     */
     public CheckCommandService(
             AppUserRepository appUserRepository,
             CheckBookRepository checkBookRepository,
@@ -46,6 +52,9 @@ public class CheckCommandService {
         this.expenseShareRepository = expenseShareRepository;
     }
 
+    /**
+     * Creates check.
+     */
     @Transactional
     public CheckSnapshot createCheck(String title, long ownerTelegramUserId, String ownerTelegramUsername) {
         String normalizedTitle = requireNonBlank(title, "Название чека обязательно");
@@ -71,6 +80,9 @@ public class CheckCommandService {
         return new CheckSnapshot(checkBook, java.util.Collections.singletonList(ownerParticipant));
     }
 
+    /**
+     * Returns the check.
+     */
     @Transactional(readOnly = true)
     public CheckSnapshot getCheck(UUID checkId) {
         CheckBook checkBook = loadCheck(checkId);
@@ -78,6 +90,9 @@ public class CheckCommandService {
         return new CheckSnapshot(checkBook, participants);
     }
 
+    /**
+     * Adds guest participant.
+     */
     @Transactional
     public Participant addGuestParticipant(UUID checkId, String displayName) {
         CheckBook checkBook = loadCheck(checkId);
@@ -97,6 +112,9 @@ public class CheckCommandService {
         return participantRepository.save(participant);
     }
 
+    /**
+     * Adds registered participant.
+     */
     @Transactional
     public Participant addRegisteredParticipant(UUID checkId, long telegramUserId, String telegramUsername) {
         CheckBook checkBook = loadCheck(checkId);
@@ -128,18 +146,27 @@ public class CheckCommandService {
         return participantRepository.save(participant);
     }
 
+    /**
+     * Executes join check by invite token.
+     */
     @Transactional
     public Participant joinCheckByInviteToken(String inviteToken, long telegramUserId, String telegramUsername) {
         CheckBook checkBook = loadCheckByInviteToken(inviteToken);
         return addRegisteredParticipant(checkBook.getId(), telegramUserId, telegramUsername);
     }
 
+    /**
+     * Returns the check by invite token.
+     */
     @Transactional(readOnly = true)
     public CheckSnapshot getCheckByInviteToken(String inviteToken) {
         CheckBook checkBook = loadCheckByInviteToken(inviteToken);
         return new CheckSnapshot(checkBook, participantRepository.findByCheckId(checkBook.getId()));
     }
 
+    /**
+     * Requires registered participant.
+     */
     @Transactional
     public Participant requireRegisteredParticipant(UUID checkId, long telegramUserId, String telegramUsername) {
         CheckBook checkBook = loadCheck(checkId);
@@ -152,12 +179,18 @@ public class CheckCommandService {
                 ));
     }
 
+    /**
+     * Requires registered participant by invite token.
+     */
     @Transactional
     public Participant requireRegisteredParticipantByInviteToken(String inviteToken, long telegramUserId, String telegramUsername) {
         CheckBook checkBook = loadCheckByInviteToken(inviteToken);
         return requireRegisteredParticipant(checkBook.getId(), telegramUserId, telegramUsername);
     }
 
+    /**
+     * Adds guest participant by invite token.
+     */
     @Transactional
     public Participant addGuestParticipantByInviteToken(
             String inviteToken,
@@ -168,6 +201,9 @@ public class CheckCommandService {
         return addGuestParticipant(actorParticipant.getCheckId(), guestDisplayName);
     }
 
+    /**
+     * Merges participant.
+     */
     @Transactional
     public Participant mergeParticipant(UUID checkId, UUID sourceParticipantId, UUID targetParticipantId, UUID performedByParticipantId) {
         CheckBook checkBook = loadCheck(checkId);
@@ -382,3 +418,6 @@ public class CheckCommandService {
         return UUID.randomUUID().toString().replace("-", "");
     }
 }
+
+
+

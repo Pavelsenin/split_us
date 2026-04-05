@@ -117,6 +117,9 @@ public class ExactSettlementSpikeSolver {
         return currentIndex;
     }
 
+    /**
+     * Represents balance.
+     */
     private static class Balance {
         private final String participant;
         private long amountMinor;
@@ -127,6 +130,9 @@ public class ExactSettlementSpikeSolver {
         }
     }
 
+    /**
+     * Represents search state.
+     */
     private static class SearchState {
         private SettlementPlan bestPlan;
 
@@ -179,3 +185,6 @@ public class ExactSettlementSpikeSolver {
         return result;
     }
 }
+
+
+

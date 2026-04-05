@@ -20,6 +20,9 @@ public class SettlementSnapshot {
     private final List<SettlementBalance> balances;
     private final Map<String, Long> balanceMap;
 
+    /**
+     * Creates a new settlement snapshot instance.
+     */
     public SettlementSnapshot(UUID checkId, String fingerprint, List<SettlementBalance> balances, Map<String, Long> balanceMap) {
         this.checkId = checkId;
         this.fingerprint = fingerprint;
@@ -55,3 +58,6 @@ public class SettlementSnapshot {
         return new LinkedHashMap<String, Long>(balanceMap);
     }
 }
+
+
+

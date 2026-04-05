@@ -3,6 +3,9 @@ package ru.splitus.expense;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+/**
+ * Represents expense.
+ */
 public class Expense {
 
     private final UUID id;
@@ -20,6 +23,9 @@ public class Expense {
     private final OffsetDateTime createdAt;
     private final OffsetDateTime updatedAt;
 
+    /**
+     * Creates a new expense instance.
+     */
     public Expense(
             UUID id,
             UUID checkId,
@@ -51,60 +57,105 @@ public class Expense {
         this.updatedAt = updatedAt;
     }
 
+    /**
+     * Returns the id.
+     */
     public UUID getId() {
         return id;
     }
 
+    /**
+     * Returns the check id.
+     */
     public UUID getCheckId() {
         return checkId;
     }
 
+    /**
+     * Returns the amount minor.
+     */
     public long getAmountMinor() {
         return amountMinor;
     }
 
+    /**
+     * Returns the currency code.
+     */
     public String getCurrencyCode() {
         return currencyCode;
     }
 
+    /**
+     * Returns the payer participant id.
+     */
     public UUID getPayerParticipantId() {
         return payerParticipantId;
     }
 
+    /**
+     * Returns the comment.
+     */
     public String getComment() {
         return comment;
     }
 
+    /**
+     * Returns the source message text.
+     */
     public String getSourceMessageText() {
         return sourceMessageText;
     }
 
+    /**
+     * Returns the telegram chat id.
+     */
     public Long getTelegramChatId() {
         return telegramChatId;
     }
 
+    /**
+     * Returns the telegram message id.
+     */
     public Long getTelegramMessageId() {
         return telegramMessageId;
     }
 
+    /**
+     * Returns the status.
+     */
     public ExpenseStatus getStatus() {
         return status;
     }
 
+    /**
+     * Returns the created by participant id.
+     */
     public UUID getCreatedByParticipantId() {
         return createdByParticipantId;
     }
 
+    /**
+     * Returns the updated by participant id.
+     */
     public UUID getUpdatedByParticipantId() {
         return updatedByParticipantId;
     }
 
+    /**
+     * Returns the created at.
+     */
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
+    /**
+     * Returns the updated at.
+     */
     public OffsetDateTime getUpdatedAt() {
         return updatedAt;
     }
 }
+
+
+
 

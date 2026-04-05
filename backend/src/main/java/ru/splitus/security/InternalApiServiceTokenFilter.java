@@ -11,6 +11,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import ru.splitus.config.InternalApiSecurityProperties;
 
+/**
+ * Filters internal api service token requests.
+ */
 @Component
 public class InternalApiServiceTokenFilter extends OncePerRequestFilter {
 
@@ -18,6 +21,9 @@ public class InternalApiServiceTokenFilter extends OncePerRequestFilter {
 
     private final InternalApiSecurityProperties properties;
 
+    /**
+     * Creates a new internal api service token filter instance.
+     */
     public InternalApiServiceTokenFilter(InternalApiSecurityProperties properties) {
         this.properties = properties;
     }
@@ -51,4 +57,7 @@ public class InternalApiServiceTokenFilter extends OncePerRequestFilter {
         );
     }
 }
+
+
+
 

@@ -21,6 +21,9 @@ public class SettlementExecutionService {
     private final SettlementQueryService settlementQueryService;
     private final ConcurrentHashMap<UUID, ReentrantLock> checkLocks = new ConcurrentHashMap<UUID, ReentrantLock>();
 
+    /**
+     * Creates a new settlement execution service instance.
+     */
     public SettlementExecutionService(SettlementQueryService settlementQueryService) {
         this.settlementQueryService = settlementQueryService;
     }
@@ -63,3 +66,6 @@ public class SettlementExecutionService {
         }
     }
 }
+
+
+
