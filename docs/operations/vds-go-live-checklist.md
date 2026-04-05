@@ -57,7 +57,8 @@
 Что используется в проекте:
 
 - `TELEGRAM_BOT_USERNAME` = username бота без `@`
-- `bot token` не хранится в `.env` текущего приложения, но нужен для `setWebhook` и `getWebhookInfo`
+- `TELEGRAM_BOT_TOKEN` хранится в `.env` и нужен приложению для `sendMessage`
+- `bot token` также нужен оператору для `setWebhook` и `getWebhookInfo`
 
 ### 2.2 Настроить Базовый Профиль Бота
 
@@ -212,6 +213,7 @@ NGINX_GRAFANA_CERTIFICATE_KEY=grafana.key
 TELEGRAM_WEBHOOK_ALIAS=prod-bot
 TELEGRAM_WEBHOOK_SECRET=CHANGE_ME_STRONG_TELEGRAM_SECRET
 TELEGRAM_BOT_USERNAME=splitus_prod_bot
+TELEGRAM_BOT_TOKEN=CHANGE_ME_REAL_BOT_TOKEN
 
 INTERNAL_SERVICE_TOKEN=CHANGE_ME_STRONG_INTERNAL_TOKEN
 ADMIN_ENVIRONMENT_NAME=production
