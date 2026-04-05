@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">Split Us Admin</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(14, 116, 144, 0.12), transparent 28%),
+                linear-gradient(135deg, #f4efe6, #e6eef5 52%, #edf5ef);
+            color: #1f2933;
+        }
+        main {
+            max-width: 1180px;
+            margin: 36px auto 48px;
+            padding: 24px;
+        }
+        .hero {
+            padding: 28px;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.86);
+            box-shadow: 0 18px 48px rgba(31, 41, 51, 0.1);
+        }
+        .pill {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: #164e63;
+            color: #fff;
+            font-size: 14px;
+        }
+        .meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .card, .section {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+        }
+        .section h2, .card h3 {
+            margin-top: 0;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            vertical-align: top;
+        }
+        th {
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-size: 12px;
+        }
+        .muted {
+            color: #64748b;
+            font-size: 14px;
+        }
+        .expense {
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: #fff;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            padding: 14px;
+            border-radius: 14px;
+            background: #f8fafc;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+        }
+        a {
+            color: #0f766e;
+            text-decoration: none;
+        }
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            font-size: 13px;
+        }
+        .actions {
+            margin-top: 14px;
+        }
+        @media (max-width: 720px) {
+            main {
+                padding: 16px;
+            }
+            table, thead, tbody, tr, th, td {
+                display: block;
+            }
+            thead {
+                display: none;
+            }
+            tr {
+                margin-bottom: 12px;
+                border: 1px solid rgba(15, 23, 42, 0.08);
+                border-radius: 14px;
+                overflow: hidden;
+            }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <section class="hero">
+        <span class="pill" th:text="${environmentName}">local</span>
+        <h1 th:text="${details.summary.title}">Trip</h1>
+        <p class="muted" th:text="${details.summary.checkId}">check-id</p>
+        <div class="actions">
+            <a href="/admin">← Назад к поиску</a>
+        </div>
+        <div class="meta">
+            <div class="card">
+                <h3>Owner</h3>
+                <div th:text="${details.summary.ownerTelegramUsername != null ? '@' + details.summary.ownerTelegramUsername : 'without username'}">@owner</div>
+                <div class="muted" th:text="${details.summary.ownerTelegramUserId}">123</div>
+            </div>
+            <div class="card">
+                <h3>Check</h3>
+                <div>Token: <span th:text="${details.summary.inviteToken}">token</span></div>
+                <div>Currency: <span th:text="${details.summary.currencyCode}">RUB</span></div>
+                <div>Created: <span th:text="${#temporals.format(details.summary.createdAt, 'yyyy-MM-dd HH:mm:ss XXX')}">2026-04-05</span></div>
+            </div>
+            <div class="card">
+                <h3>Chat</h3>
+                <div th:text="${details.summary.telegramChatId != null ? details.summary.telegramChatId : 'not linked'}">not linked</div>
+                <div class="muted" th:text="${details.summary.chatActive ? 'active' : 'inactive'}">active</div>
+            </div>
+            <div class="card">
+                <h3>Counts</h3>
+                <div>Participants: <span th:text="${details.summary.activeParticipantCount}">0</span></div>
+                <div>Expenses: <span th:text="${details.summary.expenseCount}">0</span></div>
+                <div>Merges: <span th:text="${details.merges.size()}">0</span></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2>Settlement Snapshot</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>Balances</h3>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Participant</th>
+                        <th>Balance minor</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="balance : ${details.settlement.balances}">
+                        <td th:text="${balance.participant}">alice</td>
+                        <td th:text="${balance.balanceMinor}">0</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+                <h3>Transfers</h3>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Amount minor</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="transfer : ${details.settlement.plan.transfers}">
+                        <td th:text="${transfer.fromParticipant}">bob</td>
+                        <td th:text="${transfer.toParticipant}">alice</td>
+                        <td th:text="${transfer.amountMinor}">0</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2>Participants</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Linked user</th>
+                <th>Status</th>
+                <th>Created</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="participant : ${details.participants}">
+                <td>
+                    <div th:text="${participant.displayName}">alice</div>
+                    <div class="muted" th:text="${participant.participantId}">participant-id</div>
+                </td>
+                <td th:text="${participant.participantType}">REGISTERED</td>
+                <td>
+                    <div th:text="${participant.linkedTelegramUsername != null ? '@' + participant.linkedTelegramUsername : 'guest / no link'}">guest</div>
+                    <div class="muted" th:text="${participant.linkedUserId != null ? participant.linkedUserId : ''}"></div>
+                </td>
+                <td>
+                    <span class="status" th:text="${participant.active ? 'ACTIVE' : 'MERGED'}">ACTIVE</span>
+                    <div class="muted" th:if="${participant.mergedIntoParticipantId != null}">
+                        into <span th:text="${participant.mergedIntoDisplayName}">target</span>
+                    </div>
+                </td>
+                <td th:text="${#temporals.format(participant.createdAt, 'yyyy-MM-dd HH:mm:ss XXX')}">2026-04-05</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="section">
+        <h2>Merge History</h2>
+        <table th:if="${!details.merges.isEmpty()}">
+            <thead>
+            <tr>
+                <th>Source</th>
+                <th>Target</th>
+                <th>Performed by</th>
+                <th>Created</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="merge : ${details.merges}">
+                <td th:text="${merge.sourceDisplayName}">guest</td>
+                <td th:text="${merge.targetDisplayName}">alice</td>
+                <td th:text="${merge.performedByDisplayName}">alice</td>
+                <td th:text="${#temporals.format(merge.createdAt, 'yyyy-MM-dd HH:mm:ss XXX')}">2026-04-05</td>
+            </tr>
+            </tbody>
+        </table>
+        <p class="muted" th:if="${details.merges.isEmpty()}">Для этого чека merge-операций пока нет.</p>
+    </section>
+
+    <section class="section">
+        <h2>Expenses</h2>
+        <div class="grid" th:if="${!details.expenses.isEmpty()}">
+            <article class="expense" th:each="expense : ${details.expenses}">
+                <h3 th:text="${expense.comment != null && !expense.comment.isEmpty() ? expense.comment : 'Без комментария'}">Dinner</h3>
+                <div><span class="status" th:text="${expense.status}">VALID</span></div>
+                <p class="muted" th:text="${expense.expenseId}">expense-id</p>
+                <p>Amount minor: <strong th:text="${expense.amountMinor}">0</strong></p>
+                <p>Payer: <span th:text="${expense.payerDisplayName}">alice</span></p>
+                <p>Created by: <span th:text="${expense.createdByDisplayName}">alice</span></p>
+                <p>Updated by: <span th:text="${expense.updatedByDisplayName}">alice</span></p>
+                <p>Telegram message:
+                    <span th:text="${expense.telegramChatId != null ? expense.telegramChatId : 'n/a'}">n/a</span>
+                    /
+                    <span th:text="${expense.telegramMessageId != null ? expense.telegramMessageId : 'n/a'}">n/a</span>
+                </p>
+                <p class="muted">
+                    Created <span th:text="${#temporals.format(expense.createdAt, 'yyyy-MM-dd HH:mm:ss XXX')}">2026-04-05</span>,
+                    updated <span th:text="${#temporals.format(expense.updatedAt, 'yyyy-MM-dd HH:mm:ss XXX')}">2026-04-05</span>
+                </p>
+                <h4>Shares</h4>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Participant</th>
+                        <th>Share minor</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="share : ${expense.shares}">
+                        <td th:text="${share.participantDisplayName}">alice</td>
+                        <td th:text="${share.shareMinor}">0</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div th:if="${expense.sourceMessageText != null && !expense.sourceMessageText.isEmpty()}">
+                    <h4>Source Message</h4>
+                    <pre th:text="${expense.sourceMessageText}">/add_expense ...</pre>
+                </div>
+            </article>
+        </div>
+        <p class="muted" th:if="${details.expenses.isEmpty()}">По этому чеку расходов пока нет.</p>
+    </section>
+</main>
+</body>
+</html>

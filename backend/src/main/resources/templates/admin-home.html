@@ -8,16 +8,25 @@
         body {
             margin: 0;
             font-family: "Segoe UI", sans-serif;
-            background: linear-gradient(135deg, #f5f1e8, #dfe8f1);
+            background:
+                radial-gradient(circle at top left, rgba(217, 119, 6, 0.18), transparent 32%),
+                linear-gradient(135deg, #f4efe6, #dfe8f1 52%, #edf4ea);
             color: #1f2933;
         }
         main {
-            max-width: 920px;
+            max-width: 1120px;
             margin: 48px auto;
             padding: 32px;
             background: rgba(255, 255, 255, 0.82);
             border-radius: 20px;
             box-shadow: 0 18px 48px rgba(31, 41, 51, 0.12);
+        }
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
         }
         .pill {
             display: inline-block;
@@ -35,6 +44,29 @@
         p {
             line-height: 1.6;
         }
+        form {
+            margin-top: 24px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+        }
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid rgba(22, 78, 99, 0.18);
+            border-radius: 14px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+        button {
+            padding: 14px 20px;
+            border: 0;
+            border-radius: 14px;
+            background: #0f766e;
+            color: #fff;
+            font-size: 15px;
+            cursor: pointer;
+        }
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -47,16 +79,85 @@
             background: #fff;
             border: 1px solid rgba(22, 78, 99, 0.12);
         }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 24px;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        th, td {
+            text-align: left;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            vertical-align: top;
+        }
+        th {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #475569;
+            background: rgba(241, 245, 249, 0.8);
+        }
+        a {
+            color: #0f766e;
+            text-decoration: none;
+        }
+        .muted {
+            color: #64748b;
+            font-size: 14px;
+        }
+        .empty {
+            margin-top: 24px;
+            padding: 20px;
+            border-radius: 16px;
+            background: rgba(241, 245, 249, 0.8);
+            color: #475569;
+        }
+        @media (max-width: 720px) {
+            form {
+                grid-template-columns: 1fr;
+            }
+            table, thead, tbody, tr, th, td {
+                display: block;
+            }
+            thead {
+                display: none;
+            }
+            tr {
+                margin-top: 16px;
+                border: 1px solid rgba(15, 23, 42, 0.08);
+                border-radius: 14px;
+                overflow: hidden;
+                background: rgba(255, 255, 255, 0.92);
+            }
+            td {
+                border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+            }
+            td:last-child {
+                border-bottom: 0;
+            }
+        }
     </style>
 </head>
 <body>
 <main>
-    <span class="pill">Admin MVP Stub</span>
-    <h1>Separate admin surface is wired</h1>
-    <p>
-        Эта страница подтверждает базовый этап 1: у проекта уже есть отдельный web-интерфейс для администрирования.
-        На следующем шаге сюда добавляются аутентификация, поиск чеков и read-only просмотр.
-    </p>
+    <div class="topbar">
+        <div>
+            <span class="pill">Admin Read-Only</span>
+            <h1>Проверка чеков и их состояния</h1>
+            <p>
+                Этот экран уже полезен для поддержки: можно найти чек, открыть его состав,
+                посмотреть merge history, расходы, исходные тексты Telegram-сообщений и текущий settlement snapshot.
+            </p>
+        </div>
+    </div>
+    <form method="get" action="/admin">
+        <input type="text" name="q" th:value="${query}"
+               placeholder="Поиск по title, invite token, check id, username или telegram chat id">
+        <button type="submit">Найти</button>
+    </form>
     <div class="grid">
         <section class="card">
             <h2>Environment</h2>
@@ -64,10 +165,51 @@
         </section>
         <section class="card">
             <h2>Auth mode</h2>
-            <p th:text="${authMode}">stub</p>
+            <p th:text="${authMode}">disabled</p>
         </section>
+        <section class="card">
+            <h2>Result window</h2>
+            <p>Последние 20 чеков или совпадения по запросу</p>
+        </section>
+    </div>
+    <table th:if="${!checks.isEmpty()}">
+        <thead>
+        <tr>
+            <th>Check</th>
+            <th>Owner</th>
+            <th>Participants</th>
+            <th>Expenses</th>
+            <th>Chat</th>
+            <th>Created</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="check : ${checks}">
+            <td>
+                <a th:href="@{/admin/checks/{checkId}(checkId=${check.checkId})}" th:text="${check.title}">Trip</a>
+                <div class="muted" th:text="${check.checkId}">check-id</div>
+                <div class="muted">
+                    token:
+                    <span th:text="${check.inviteToken}">token</span>
+                </div>
+            </td>
+            <td>
+                <div th:text="${check.ownerTelegramUsername != null ? '@' + check.ownerTelegramUsername : 'without username'}">@owner</div>
+                <div class="muted" th:text="${check.ownerTelegramUserId}">123</div>
+            </td>
+            <td th:text="${check.activeParticipantCount}">0</td>
+            <td th:text="${check.expenseCount}">0</td>
+            <td>
+                <div th:text="${check.telegramChatId != null ? check.telegramChatId : 'not linked'}">not linked</div>
+                <div class="muted" th:text="${check.chatActive ? 'active' : 'inactive'}">active</div>
+            </td>
+            <td th:text="${#temporals.format(check.createdAt, 'yyyy-MM-dd HH:mm:ss XXX')}">2026-04-05</td>
+        </tr>
+        </tbody>
+    </table>
+    <div class="empty" th:if="${checks.isEmpty()}">
+        По этому запросу ничего не найдено. Можно искать по названию чека, invite token, UUID, username владельца или telegram chat id.
     </div>
 </main>
 </body>
 </html>
-

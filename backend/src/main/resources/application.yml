@@ -21,6 +21,8 @@ management:
         include: health,info,prometheus
 
 splitus:
+  admin:
+    environment-name: ${ADMIN_ENVIRONMENT_NAME:local}
   telegram:
     webhook:
       path-alias: ${TELEGRAM_WEBHOOK_ALIAS:local-bot}
