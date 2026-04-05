@@ -15,38 +15,17 @@
             background:
                 radial-gradient(circle at top left, rgba(210, 160, 107, 0.45), transparent 36%),
                 linear-gradient(145deg, #fcfaf5, #dbe7f0);
-            color: #16324f;
         }
         form {
             width: min(420px, calc(100vw - 32px));
             padding: 28px;
             border-radius: 20px;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.86);
             box-shadow: 0 22px 46px rgba(26, 54, 93, 0.14);
         }
         h1 {
             margin-top: 0;
-            margin-bottom: 8px;
-        }
-        .lead {
-            margin-top: 0;
             margin-bottom: 24px;
-            color: #475569;
-            line-height: 1.5;
-        }
-        .alert {
-            padding: 12px 14px;
-            margin-bottom: 16px;
-            border-radius: 12px;
-            font-size: 14px;
-        }
-        .alert-error {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        .alert-info {
-            background: #dcfce7;
-            color: #166534;
         }
         label {
             display: block;
@@ -70,39 +49,27 @@
             background: #0f766e;
             color: #fff;
             font-size: 15px;
-            cursor: pointer;
         }
-        .hint {
+        p {
             margin-top: 18px;
             color: #475569;
             font-size: 14px;
-            line-height: 1.5;
         }
     </style>
 </head>
 <body>
-<form th:action="@{/admin/login}" method="post">
+<form>
     <h1>Вход в админ-панель</h1>
-    <p class="lead">Доступ только для администратора. Используется логин из таблицы <code>admin_user</code>.</p>
-    <div class="alert alert-error" th:if="${param.error}">
-        Неверный логин или пароль.
-    </div>
-    <div class="alert alert-info" th:if="${param.logout}">
-        Сессия завершена.
-    </div>
     <label>
         Логин
-        <input type="text" name="login" placeholder="admin" autofocus>
+        <input type="text" name="login" placeholder="admin">
     </label>
     <label>
         Пароль
         <input type="password" name="password" placeholder="password">
     </label>
-    <button type="submit">Войти</button>
-    <p class="hint">
-        Для bootstrap-админа можно задать <code>ADMIN_BOOTSTRAP_LOGIN</code> и
-        <code>ADMIN_BOOTSTRAP_PASSWORD_HASH</code>.
-    </p>
+    <button type="button">Заглушка входа</button>
+    <p>На этом этапе форма подтверждает наличие отдельного web-интерфейса. Реальная auth появится следующим инкрементом.</p>
 </form>
 </body>
 </html>

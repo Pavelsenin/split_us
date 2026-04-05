@@ -26,9 +26,5 @@ splitus:
       path-alias: ${TELEGRAM_WEBHOOK_ALIAS:local-bot}
       secret-token: ${TELEGRAM_WEBHOOK_SECRET:change-me}
       bot-username: ${TELEGRAM_BOT_USERNAME:splitus_bot}
-  admin:
-    bootstrap-login: ${ADMIN_BOOTSTRAP_LOGIN:}
-    bootstrap-password-hash: ${ADMIN_BOOTSTRAP_PASSWORD_HASH:}
-    environment-name: ${APP_ENVIRONMENT_NAME:local}
   security:
     service-token: ${INTERNAL_SERVICE_TOKEN:change-me-too}
