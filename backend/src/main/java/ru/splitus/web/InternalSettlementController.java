@@ -5,21 +5,21 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import ru.splitus.settlement.SettlementQueryService;
+import ru.splitus.settlement.SettlementExecutionService;
 import ru.splitus.web.dto.SettlementResponse;
 
 @RestController
 @RequestMapping("/api/internal/checks")
 public class InternalSettlementController {
 
-    private final SettlementQueryService settlementQueryService;
+    private final SettlementExecutionService settlementExecutionService;
 
-    public InternalSettlementController(SettlementQueryService settlementQueryService) {
-        this.settlementQueryService = settlementQueryService;
+    public InternalSettlementController(SettlementExecutionService settlementExecutionService) {
+        this.settlementExecutionService = settlementExecutionService;
     }
 
     @PostMapping("/{checkId}/settlement")
     public SettlementResponse calculateSettlement(@PathVariable UUID checkId) {
-        return SettlementResponse.fromDomain(settlementQueryService.calculate(checkId));
+        return SettlementResponse.fromDomain(settlementExecutionService.calculateStable(checkId));
     }
 }

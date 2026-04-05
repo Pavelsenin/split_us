@@ -18,8 +18,8 @@ import ru.splitus.expense.ExpenseCommandService;
 import ru.splitus.expense.ExpenseDetails;
 import ru.splitus.expense.ExpenseStatus;
 import ru.splitus.settlement.SettlementBalance;
+import ru.splitus.settlement.SettlementExecutionService;
 import ru.splitus.settlement.SettlementPlan;
-import ru.splitus.settlement.SettlementQueryService;
 import ru.splitus.settlement.SettlementResult;
 
 @Service
@@ -27,17 +27,17 @@ public class TelegramCommandService {
 
     private final CheckCommandService checkCommandService;
     private final ExpenseCommandService expenseCommandService;
-    private final SettlementQueryService settlementQueryService;
+    private final SettlementExecutionService settlementExecutionService;
     private final TelegramWebhookProperties telegramWebhookProperties;
 
     public TelegramCommandService(
             CheckCommandService checkCommandService,
             ExpenseCommandService expenseCommandService,
-            SettlementQueryService settlementQueryService,
+            SettlementExecutionService settlementExecutionService,
             TelegramWebhookProperties telegramWebhookProperties) {
         this.checkCommandService = checkCommandService;
         this.expenseCommandService = expenseCommandService;
-        this.settlementQueryService = settlementQueryService;
+        this.settlementExecutionService = settlementExecutionService;
         this.telegramWebhookProperties = telegramWebhookProperties;
     }
 
@@ -271,7 +271,7 @@ public class TelegramCommandService {
                 from.getId().longValue(),
                 from.getUsername()
         );
-        SettlementResult settlementResult = settlementQueryService.calculate(actorParticipant.getCheckId());
+        SettlementResult settlementResult = settlementExecutionService.calculateStable(actorParticipant.getCheckId());
         return reply(message.getChat().getId(), formatSettlementResult(settlementResult));
     }
 
