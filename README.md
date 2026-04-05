@@ -61,6 +61,7 @@ mvn -f backend/pom.xml spring-boot:run
 - архитектура: `docs/architecture/`
 - пользовательские инструкции: `docs/user/`
 - operations: `docs/operations/`
+- VDS go-live checklist: `docs/operations/vds-go-live-checklist.md`
 - статус выполнения плана: `docs/release/implementation-status.md`
 - приёмка релиза: `docs/release/acceptance-checklist.md`
 - обзор всех документов: `docs/index.md`
